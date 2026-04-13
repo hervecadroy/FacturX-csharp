@@ -16,11 +16,6 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-
 namespace FacturX
 {
 
@@ -104,6 +99,11 @@ namespace FacturX
         /// Instructions to the paying and/or accepting and/or negotiating bank
         /// </summary>
         AET,
+
+        /// <summary>
+        /// Processing Instructions
+        /// </summary>
+        BAR,
 
         /// <summary>
         /// Waste information
