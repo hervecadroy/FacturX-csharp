@@ -1,165 +1,100 @@
-# ZUGFeRD-CSharp – Next Chapter
+# FacturX-CSharp
 
-[![NuGet Version](https://img.shields.io/nuget/v/ZUGFeRD-CSharp.svg?style=flat&logo=nuget)](https://www.nuget.org/packages/ZUGFeRD-CSharp)
-![Model](https://img.shields.io/badge/model-open%20core-blue)
+[![NuGet Version](https://img.shields.io/badge/nuget-v1.0.0-blue?style=flat&logo=nuget)](https://www.nuget.org/packages/FacturX-CSharp)
+![License](https://img.shields.io/badge/license-Apache%202.0-green)
 ![Status](https://img.shields.io/badge/status-active-success)
 
+Bibliothèque C# open source pour lire, créer et traiter des factures électroniques au format **ZUGFeRD / FacturX**.
 
-## TL;DR
+---
 
-**Deutsch**
-- ZUGFeRD-CSharp bleibt Open Source  
-- Bugfixes und Stabilitätsverbesserungen bleiben öffentlich verfügbar  
-- Neue Features gibt es ausschließlich in der kommerziellen Version  
-- Commercial Version: https://www.nuget.org/packages/FactoorSharp.FacturX
+## Français
 
-**English**
-- ZUGFeRD-CSharp remains Open Source  
-- Bug fixes and stability improvements remain publicly available  
-- New features are only available in the commercial version  
-- Commercial version: https://www.nuget.org/packages/FactoorSharp.FacturX  
+### Présentation
 
+**FacturX-CSharp** est un fork 100 % open source de la bibliothèque ZUGFeRD-CSharp, maintenu sous licence Apache 2.0.
 
-## Deutsch
+ZUGFeRD / FacturX est une norme européenne de facturation électronique qui embarque des données XML structurées directement dans un PDF/A. Ce format est notamment requis dans le cadre de la réforme française de la facturation électronique.
 
-### Ein neues Kapitel für ZUGFeRD-CSharp!
+### Fonctionnalités
 
-ZUGFeRD-CSharp wurde 2013 als Hobbyprojekt gestartet – mit dem Ziel, die Erstellung und Verarbeitung von ZUGFeRD-Rechnungen zu vereinfachen.  
-Heute setzen hunderte Unternehmen diese Bibliothek produktiv ein.
+- Lecture et parsing de factures ZUGFeRD / FacturX (profils Minimum, Basic, EN16931, Extended)
+- Création et génération de factures
+- Intégration PDF
+- Export Excel
+- Rendu visuel des factures
 
-Mit dieser Verbreitung wächst auch die Verantwortung:  
-Die Stabilität und Zukunftssicherheit der Bibliothek müssen langfristig gewährleistet sein.
+### Installation
 
-### Das neue Modell
+```bash
+dotnet add package FacturX-CSharp
+```
 
-ZUGFeRD-CSharp wird künftig als Open-Core-Modell weitergeführt:
+### Contribuer
 
-- Open Source bleibt bestehen  
-  - Bugfixes  
-  - Stabilitätsverbesserungen  
-- Kommerzielle Version (FactoorSharp)  
-  - Neue Features  
-  - Erweiterte Funktionalitäten  
-  - Professioneller Support  
+Les contributions sont les bienvenues : bugfixes, nouvelles fonctionnalités, documentation.  
+Ouvrez une issue ou soumettez une pull request.
 
-### Warum dieser Schritt?
-
-Dieses Modell stellt sicher, dass:
-
-- die bestehende Community weiterhin profitiert  
-- Unternehmen auf eine stabile Basis vertrauen können  
-- Risiken im produktiven Einsatz durch kontinuierliche Weiterentwicklung reduziert werden  
-- gleichzeitig eine nachhaltige Weiterentwicklung ermöglicht wird  
-
-### Dank an die Community
-
-Ein großes Dankeschön an alle Contributors und Nutzer, die dieses Projekt seit 2013 begleitet haben.  
-Eure Beiträge, Bugreports und Ideen sind ein wesentlicher Bestandteil dieses Erfolgs.
-
-
-## Kommerzielle Version
-
-Die kommerzielle Weiterentwicklung erfolgt unter:
-
-NuGet:  
-https://www.nuget.org/packages/FactoorSharp.FacturX  
-
-GitHub (Issues & Diskussionen):  
-https://github.com/S2-Industries/FactoorSharp.FacturX  
-
-Website:  
-https://www.factoorsharp.de/  
-
-## Warum lohnt sich die kommerzielle Version?
-
-Die kommerzielle Version bietet zusätzliche Funktionen, die über die reine Verarbeitung von ZUGFeRD-Dateien hinausgehen und speziell auf produktive Einsatzszenarien ausgerichtet sind:
-
-- Validierungs-Komponente  
-  Validierung von ZUGFeRD- und PDF-Dateien mit etablierten Tools wie Mustang, Valitool und VeraPDF  
-
-- Integration kommender Standards  
-  Frühzeitige Unterstützung neuer Anforderungen und Weiterentwicklungen rund um E-Invoicing  
-
-- Online-Tools & Services  
-  Ergänzende Hilfsmittel zur Analyse und Verarbeitung von ZUGFeRD-Dateien auf:  
-  https://www.factoorsharp.de/  
-
-Diese Erweiterungen helfen dabei, Fehler frühzeitig zu erkennen, Risiken im produktiven Einsatz zu reduzieren und die Verarbeitung elektronischer Rechnungen langfristig stabil zu betreiben.
-
+---
 
 ## English
 
-### A New Chapter for ZUGFeRD-CSharp!
+### Overview
 
-ZUGFeRD-CSharp started in 2013 as a hobby project, aiming to simplify the creation and processing of ZUGFeRD invoices.  
-Today, hundreds of companies rely on this library in production.
+**FacturX-CSharp** is a fully open-source fork of the ZUGFeRD-CSharp library, maintained under the Apache 2.0 license.
 
-With this adoption comes responsibility:  
-Ensuring long-term stability and continuous improvement is essential.
+ZUGFeRD / FacturX is a European e-invoicing standard that embeds structured XML data directly inside a PDF/A file.
 
-### The New Model
+### Features
 
-ZUGFeRD-CSharp will continue as an open-core model:
+- Read and parse ZUGFeRD / FacturX invoices (Minimum, Basic, EN16931, Extended profiles)
+- Create and generate invoices
+- PDF integration
+- Excel export
+- Invoice rendering
 
-- Open Source remains available  
-  - Bug fixes  
-  - Stability improvements  
-- Commercial version (FactoorSharp)  
-  - New features  
-  - Advanced functionality  
-  - Professional support  
+### Installation
 
-### Why This Step?
+```bash
+dotnet add package FacturX-CSharp
+```
 
-This approach ensures that:
+### Contributing
 
-- the community continues to benefit  
-- companies can rely on a stable foundation  
-- risks in production environments are reduced through continuous development  
-- sustainable development is made possible  
+Contributions are welcome: bug fixes, new features, documentation improvements.  
+Open an issue or submit a pull request.
 
-### Thanks to the Community
+---
 
-A big thank-you to all contributors and users who have supported this project since 2013.  
-Your feedback, bug reports, and contributions made this project what it is today.
+## Deutsch
 
+### Überblick
 
+**FacturX-CSharp** ist ein vollständig Open-Source-Fork der ZUGFeRD-CSharp-Bibliothek, gepflegt unter der Apache-2.0-Lizenz.
 
-## Commercial Version
+ZUGFeRD / FacturX ist ein europäischer E-Rechnungsstandard, der strukturierte XML-Daten direkt in eine PDF/A-Datei einbettet.
 
-The commercial development is available here:
+### Funktionen
 
-NuGet:  
-https://www.nuget.org/packages/FactoorSharp.FacturX  
+- Lesen und Parsen von ZUGFeRD / FacturX-Rechnungen (Profile: Minimum, Basic, EN16931, Extended)
+- Erstellen und Generieren von Rechnungen
+- PDF-Integration
+- Excel-Export
+- Rechnungsdarstellung
 
-GitHub (Issues & Discussions):  
-https://github.com/S2-Industries/FactoorSharp.FacturX  
+### Installation
 
-Website:  
-https://www.factoorsharp.de/  
+```bash
+dotnet add package FacturX-CSharp
+```
 
-Summary:
+### Mitwirken
 
-ZUGFeRD-CSharp remains Open Source for stability and bug fixes.  
-All new features are part of the commercial FactoorSharp product.
+Beiträge sind willkommen: Bugfixes, neue Funktionen, Dokumentationsverbesserungen.  
+Öffne ein Issue oder reiche einen Pull Request ein.
 
-## Features of the commercial version
-The commercial version provides additional capabilities beyond basic ZUGFeRD processing, designed for production-grade environments:
+---
 
-- Validation component  
-  Validate ZUGFeRD and PDF documents using established tools such as Mustang, Valitool, and VeraPDF  
+## Documentation
 
-- Integration of upcoming standards  
-  Early support for new regulatory requirements and evolving e-invoicing standards  
-
-- Online tools & services  
-  Additional utilities for analyzing and processing ZUGFeRD files available at:  
-  https://www.factoorsharp.de/  
-
-These features help improve quality, compliance, and efficiency when working with electronic invoices.
-
-
-# Documentation
-The full documentation for the open-source version can be found here:
-
-https://github.com/stephanstapel/ZUGFeRD-csharp/tree/master/docs
+The full documentation can be found in the [`docs`](./docs) folder.

@@ -1,0 +1,79 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>netstandard2.0;netstandard2.1;net462;net480;net8.0</TargetFrameworks>
+    <Authors>FacturX-CSharp Contributors</Authors>
+    <Company></Company>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <PackageId>FacturX.PDF-csharp</PackageId>
+    <PackageReadmeFile></PackageReadmeFile>
+    <RepositoryUrl>https://github.com/hervecadroy/FacturX-csharp/</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <IncludeSymbols>True</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
+    <RootNamespace>FacturX.PDF</RootNamespace>
+    <Version>1.0.0</Version>
+    <PackageReleaseNotes>1.0.0
+* Fork of ZUGFeRD-csharp as FacturX-CSharp - fully open-source under Apache-2.0</PackageReleaseNotes>
+    <AssemblyName>FacturX.PDF</AssemblyName>
+    <AssemblyVersion>1.0.0</AssemblyVersion>
+    <Description>FacturX-CSharp is an open-source C# library for reading, creating and processing ZUGFeRD / Factur-X / XRechnung electronic invoices.
+
+This library allows to load and create PDF/A files containing FacturX invoice data.
+    </Description>
+    <Copyright>Apache-2.0 - Fork of ZUGFeRD-csharp by Stephan Stapel</Copyright>
+    <PackageProjectUrl>https://github.com/hervecadroy/FacturX-csharp/</PackageProjectUrl>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <SignAssembly>True</SignAssembly>
+    <AssemblyOriginatorKeyFile>FacturX.PDF.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="Resources\sRGB-IEC61966-2.1.icc" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\PdfMetadataTemplate-2.0.xml" />
+    <EmbeddedResource Include="Resources\PdfMetadataTemplate-2.3.xml" />
+    <EmbeddedResource Include="Resources\PdfMetadataTemplate-1.0.xml" />
+    <EmbeddedResource Include="Resources\sRGB-IEC61966-2.1.icc" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="PDFsharp-extended" Version="1.3.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\FacturX\FacturX.csproj" />
+  </ItemGroup>
+
+  <!-- netstandard: minimal & stabil -->
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' &#xD;&#xA;                      Or '$(TargetFramework)' == 'netstandard2.1'">
+    <PackageReference Include="System.Text.Encoding.CodePages" Version="4.7.1" />
+  </ItemGroup>
+
+  <!-- .NET Framework -->
+  <ItemGroup Condition="'$(TargetFramework)' == 'net462' &#xD;&#xA;                      Or '$(TargetFramework)' == 'net480'">
+    <PackageReference Include="System.Text.Encoding.CodePages" Version="4.7.1" />
+  </ItemGroup>
+
+  <!-- .NET -->
+  <ItemGroup Condition="'$(TargetFramework)' == 'net8.0'">
+    <PackageReference Include="System.Text.Encoding.CodePages" Version="8.0.0" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'net8.0' Or '$(TargetFramework)' == 'netstandard2.1' Or '$(TargetFramework)' == 'netstandard2.0'">
+    <InternalsVisibleTo Include="FacturX.PDF.Test" PublicKey="002400000480000094000000060200000024000052534131000400000100010081c1f498ffd755d92e3d0514c50e62fc59ca4a448c7d718564117c51e406b92035e0b2651f3cdf29a1207fcd85ab8a6be0d66e1b0fe3d9a1cbd1882dd7569c8320e17752bd835e74ef6a13c79592b864fcfb8507de5de60f470ea3b0ed8bf49ab0f09bd5b4be081a5964ab16791dd1f3b46e78ef5a355e783998b9be92a938f3" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'net462' Or '$(TargetFramework)' == 'net480'">
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+      <_Parameter1>
+        FacturX.PDF.Test, PublicKey=002400000480000094000000060200000024000052534131000400000100010081c1f498ffd755d92e3d0514c50e62fc59ca4a448c7d718564117c51e406b92035e0b2651f3cdf29a1207fcd85ab8a6be0d66e1b0fe3d9a1cbd1882dd7569c8320e17752bd835e74ef6a13c79592b864fcfb8507de5de60f470ea3b0ed8bf49ab0f09bd5b4be081a5964ab16791dd1f3b46e78ef5a355e783998b9be92a938f3</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
+
+</Project>

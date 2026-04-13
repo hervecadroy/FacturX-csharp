@@ -1,0 +1,10 @@
+<Solution>
+    <Project Path="FacturX/FacturX.csproj" />
+    <Project Path="FacturX.PDF/FacturX.PDF.csproj" />
+    <Project Path="FacturX.Excel/FacturX.Excel.csproj" />
+    <Project Path="FacturX.Render/FacturX.Render.csproj" />
+    <Project Path="FacturX.Test/FacturX.Test.csproj" />
+    <Project Path="FacturX.PDF.Test/FacturX.PDF.Test.csproj" />
+    <Project Path="FacturX.Excel.Test/FacturX.Excel.Test.csproj" />
+    <Project Path="FacturX.Render.Demo/FacturX.Render.Demo.csproj" />
+</Solution>

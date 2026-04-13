@@ -1,0 +1,57 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>netstandard2.0;netstandard2.1;net461;net480;net8.0</TargetFrameworks>
+    <Version>1.0.0</Version>
+    <Authors>FacturX-CSharp Contributors</Authors>
+    <Company></Company>
+    <Description>FacturX-CSharp is an open-source C# library for reading, creating and processing ZUGFeRD / Factur-X / XRechnung electronic invoices.
+
+ZUGFeRD and Factur-X are European e-invoicing standards that embed structured XML data inside a PDF/A file.
+XRechnung is the German public-sector e-invoicing standard, also supported by this library.
+
+Find the project here:
+https://github.com/hervecadroy/FacturX-csharp</Description>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/hervecadroy/FacturX-csharp/</PackageProjectUrl>
+    <PackageTags>facturx zugferd xrechnung pdf invoice electronic-invoicing</PackageTags>
+    <Copyright>Apache-2.0 - Fork of ZUGFeRD-csharp by Stephan Stapel</Copyright>
+    <AssemblyVersion>1.0.0</AssemblyVersion>
+    <AssemblyTrademark></AssemblyTrademark>
+    <FileVersion>1.0.0</FileVersion>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+    <AssemblyName>FacturX</AssemblyName>
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>FacturX.snk</AssemblyOriginatorKeyFile>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <PackageReleaseNotes>1.0.0
+* Fork of ZUGFeRD-csharp as FacturX-CSharp - fully open-source under Apache-2.0
+* Renamed all projects and namespaces to FacturX</PackageReleaseNotes>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <PackageId>FacturX-csharp</PackageId>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <RepositoryUrl>https://github.com/hervecadroy/FacturX-csharp/</RepositoryUrl>
+    <UserSecretsId>ceeaa3c6-7c48-4061-b8f6-da26a9de5879</UserSecretsId>
+    <RepositoryType>git</RepositoryType>
+    <IncludeSymbols>True</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
+    <RootNamespace>FacturX</RootNamespace>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <OutputPath>bin\Debug</OutputPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <OutputPath>bin\Release</OutputPath>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="..\README.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
+  </ItemGroup>
+</Project>

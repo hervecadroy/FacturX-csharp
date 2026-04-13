@@ -1,4 +1,4 @@
-
+﻿
 
 
 
@@ -208,7 +208,7 @@ And here: https://www.roedl.de/themen/frankreich-e-invoice-reporting-umsatzsteue
 
 
 
-Thanks to [@Athilla](https://github.com/Athilla), this profile is also supported by ZUGFeRD-csharp.
+Thanks to [@Athilla](https://github.com/Athilla), this profile is also supported by FacturX-csharp.
 
 
 

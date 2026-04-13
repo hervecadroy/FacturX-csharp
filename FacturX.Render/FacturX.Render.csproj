@@ -1,0 +1,26 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <RootNamespace>FacturX.Render</RootNamespace>
+    <PreserveCompilationContext>true</PreserveCompilationContext>
+    <Version>1.0.0</Version>
+    <AssemblyName>FacturX.Render</AssemblyName>
+    <AssemblyVersion>1.0.0</AssemblyVersion>
+    <Copyright>Apache-2.0</Copyright>
+    <Company></Company>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Simple.scriban" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Scriban" Version="7.0.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\FacturX\FacturX.csproj" />
+  </ItemGroup>
+
+</Project>

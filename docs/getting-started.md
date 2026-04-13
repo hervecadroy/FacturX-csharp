@@ -1,4 +1,4 @@
-# Introduction
+﻿# Introduction
 
 The ZUGFeRD library allows to create XML files as required by German electronic invoice initiative ZUGFeRD as well invoices in the successor Factur-X. One special profile of Factur-X is the German XRechnung format.
 
@@ -46,7 +46,7 @@ Subject to the Apache license http://www.apache.org/licenses/LICENSE-2.0.html
 
 # Installation
 
-Just use nuget or Visual Studio Package Manager and download 'ZUGFeRD-csharp'.
+Just use nuget or Visual Studio Package Manager and download 'FacturX-csharp'.
 
 
 
@@ -54,11 +54,11 @@ You can find more information about the nuget package here:
 
 
 
-[![NuGet](https://img.shields.io/nuget/v/ZUGFeRD-csharp?color=blue)](https://www.nuget.org/packages/ZUGFeRD-csharp/)
+[![NuGet](https://img.shields.io/nuget/v/FacturX-csharp?color=blue)](https://www.nuget.org/packages/FacturX-csharp/)
 
 
 
-https://www.nuget.org/packages/ZUGFeRD-csharp/
+https://www.nuget.org/packages/FacturX-csharp/
 
 
 
@@ -238,7 +238,7 @@ stream.Close();
 
 
 # Working with ZUGFeRD PDF files
-The ZUGFeRD-csharp component has a sister component which relies on [PDFSharp](https://github.com/empira/PDFsharp) to read and write PDF files.
+The FacturX-csharp component has a sister component which relies on [PDFSharp](https://github.com/empira/PDFsharp) to read and write PDF files.
 
 Download the package here:
 
