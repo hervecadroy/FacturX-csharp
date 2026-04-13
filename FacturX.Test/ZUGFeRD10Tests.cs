@@ -28,7 +28,7 @@ namespace FacturX.Test
         [TestMethod]
         public void TestReferenceComfortInvoice()
         {
-            string path = @"..\..\..\..\demodata\zugferd10\ZUGFeRD_1p0_COMFORT_Einfach.xml";
+            string path = @"..\..\..\..\demodata\FacturX10\ZUGFeRD_1p0_COMFORT_Einfach.xml";
             path = _makeSurePathIsCrossPlatformCompatible(path);
             InvoiceDescriptor desc = InvoiceDescriptor.Load(path);
 
@@ -41,7 +41,7 @@ namespace FacturX.Test
         [TestMethod]
         public void TestReferenceComfortInvoiceRabattiert()
         {
-            string path = @"..\..\..\..\demodata\zugferd10\ZUGFeRD_1p0_COMFORT_Rabatte.xml";
+            string path = @"..\..\..\..\demodata\FacturX10\ZUGFeRD_1p0_COMFORT_Rabatte.xml";
             path = _makeSurePathIsCrossPlatformCompatible(path);
 
             InvoiceDescriptor desc = InvoiceDescriptor.Load(path);
@@ -116,7 +116,7 @@ namespace FacturX.Test
             ms.Seek(0, SeekOrigin.Begin);
             XmlDocument doc = new XmlDocument();
             doc.Load(ms);
-            XmlNamespaceManager nsmgr = new XmlNamespaceManager(doc.DocumentElement.OwnerDocument.NameTable);            
+            XmlNamespaceManager nsmgr = new XmlNamespaceManager(doc.DocumentElement.OwnerDocument.NameTable);
             nsmgr.AddNamespace("rsm", "urn:ferd:CrossIndustryDocument:invoice:1p0");
             nsmgr.AddNamespace("ram", "urn:un:unece:uncefact:data:standard:ReusableAggregateBusinessInformationEntity:12");
             nsmgr.AddNamespace("udt", "urn:un:unece:uncefact:data:standard:UnqualifiedDataType:15");
@@ -131,7 +131,7 @@ namespace FacturX.Test
         [TestMethod]
         public void TestMissingPropertiesAreNull()
         {
-            string path = @"..\..\..\..\demodata\zugferd10\ZUGFeRD_1p0_COMFORT_Einfach.xml";
+            string path = @"..\..\..\..\demodata\FacturX10\ZUGFeRD_1p0_COMFORT_Einfach.xml";
             path = _makeSurePathIsCrossPlatformCompatible(path);
 
             var invoiceDescriptor = InvoiceDescriptor.Load(path);
@@ -144,7 +144,7 @@ namespace FacturX.Test
         [TestMethod]
         public void TestSpecifiedTradePaymentTermsDescription()
         {
-            string path = @"..\..\..\..\demodata\zugferd10\ZUGFeRD_1p0_EXTENDED_Warenrechnung.xml";
+            string path = @"..\..\..\..\demodata\FacturX10\ZUGFeRD_1p0_EXTENDED_Warenrechnung.xml";
             path = _makeSurePathIsCrossPlatformCompatible(path);
 
             InvoiceDescriptor desc = InvoiceDescriptor.Load(path);
@@ -156,7 +156,7 @@ namespace FacturX.Test
         [TestMethod]
         public void TestSpecifiedTradePaymentTermsCalculationPercent()
         {
-            string path = @"..\..\..\..\demodata\zugferd10\ZUGFeRD_1p0_EXTENDED_Warenrechnung.xml";
+            string path = @"..\..\..\..\demodata\FacturX10\ZUGFeRD_1p0_EXTENDED_Warenrechnung.xml";
             path = _makeSurePathIsCrossPlatformCompatible(path);
 
             InvoiceDescriptor desc = InvoiceDescriptor.Load(path);

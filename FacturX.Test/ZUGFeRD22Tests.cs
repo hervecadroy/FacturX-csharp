@@ -63,7 +63,7 @@ namespace FacturX.Test
         [TestMethod]
         public void TestLineStatusCode()
         {
-            string path = @"..\..\..\..\demodata\zugferd21\zugferd_2p1_EXTENDED_Warenrechnung-factur-x.xml";
+            string path = @"..\..\..\..\demodata\FacturX21\zugferd_2p1_EXTENDED_Warenrechnung-factur-x.xml";
             path = _makeSurePathIsCrossPlatformCompatible(path);
 
             Stream s = File.Open(path, FileMode.Open);
@@ -122,7 +122,7 @@ namespace FacturX.Test
         [TestMethod]
         public void TestExtendedInvoiceWithIncludedItems()
         {
-            string path = @"..\..\..\..\demodata\zugferd21\zugferd_2p1_EXTENDED_Warenrechnung-factur-x.xml";
+            string path = @"..\..\..\..\demodata\FacturX21\zugferd_2p1_EXTENDED_Warenrechnung-factur-x.xml";
             path = _makeSurePathIsCrossPlatformCompatible(path);
 
             Stream s = File.Open(path, FileMode.Open);
@@ -170,7 +170,7 @@ namespace FacturX.Test
         [TestMethod]
         public void TestTradeLineItemProductFieldsRoundtrip()
         {
-            string path = @"..\..\..\..\demodata\zugferd21\zugferd_2p1_EXTENDED_Warenrechnung-factur-x.xml";
+            string path = @"..\..\..\..\demodata\FacturX21\zugferd_2p1_EXTENDED_Warenrechnung-factur-x.xml";
             path = _makeSurePathIsCrossPlatformCompatible(path);
 
             Stream s = File.Open(path, FileMode.Open);
@@ -224,7 +224,7 @@ namespace FacturX.Test
         [TestMethod]
         public void TestIncludedReferencedProductFieldsRoundtrip()
         {
-            string path = @"..\..\..\..\demodata\zugferd21\zugferd_2p1_EXTENDED_Warenrechnung-factur-x.xml";
+            string path = @"..\..\..\..\demodata\FacturX21\zugferd_2p1_EXTENDED_Warenrechnung-factur-x.xml";
             path = _makeSurePathIsCrossPlatformCompatible(path);
 
             Stream s = File.Open(path, FileMode.Open);
@@ -301,7 +301,7 @@ namespace FacturX.Test
         [TestMethod]
         public void TestReferenceEReportingFacturXInvoice()
         {
-            string path = @"..\..\..\..\demodata\zugferd21\zugferd_2p1_EREPORTING-factur-x.xml";
+            string path = @"..\..\..\..\demodata\FacturX21\zugferd_2p1_EREPORTING-factur-x.xml";
             path = _makeSurePathIsCrossPlatformCompatible(path);
 
             Stream s = File.Open(path, FileMode.Open);
@@ -321,7 +321,7 @@ namespace FacturX.Test
         [TestMethod]
         public void TestReferenceBasicFacturXInvoice()
         {
-            string path = @"..\..\..\..\demodata\zugferd21\zugferd_2p1_BASIC_Einfach-factur-x.xml";
+            string path = @"..\..\..\..\demodata\FacturX21\zugferd_2p1_BASIC_Einfach-factur-x.xml";
             path = _makeSurePathIsCrossPlatformCompatible(path);
 
             Stream s = File.Open(path, FileMode.Open);
@@ -339,7 +339,7 @@ namespace FacturX.Test
         [TestMethod]
         public void TestStoringReferenceBasicFacturXInvoice()
         {
-            string path = @"..\..\..\..\demodata\zugferd21\zugferd_2p1_BASIC_Einfach-factur-x.xml";
+            string path = @"..\..\..\..\demodata\FacturX21\zugferd_2p1_BASIC_Einfach-factur-x.xml";
             path = _makeSurePathIsCrossPlatformCompatible(path);
 
             Stream s = File.Open(path, FileMode.Open);
@@ -380,7 +380,7 @@ namespace FacturX.Test
         [TestMethod]
         public void TestReferenceBasicWLInvoice()
         {
-            string path = @"..\..\..\..\demodata\zugferd21\zugferd_2p1_BASIC-WL_Einfach-factur-x.xml";
+            string path = @"..\..\..\..\demodata\FacturX21\zugferd_2p1_BASIC-WL_Einfach-factur-x.xml";
             path = _makeSurePathIsCrossPlatformCompatible(path);
 
             Stream s = File.Open(path, FileMode.Open);
@@ -398,7 +398,7 @@ namespace FacturX.Test
         [TestMethod]
         public void TestReferenceExtendedInvoice()
         {
-            string path = @"..\..\..\..\documentation\zugferd240en\Examples\4. EXTENDED\EXTENDED_Warenrechnung\EXTENDED_Warenrechnung.xml";
+            string path = @"..\..\..\..\documentation\FacturX240en\Examples\4. EXTENDED\EXTENDED_Warenrechnung\EXTENDED_Warenrechnung.xml";
             path = _makeSurePathIsCrossPlatformCompatible(path);
 
             Stream s = File.Open(path, FileMode.Open);
@@ -434,7 +434,7 @@ namespace FacturX.Test
         [TestMethod]
         public void TestReferenceMinimumInvoice()
         {
-            string path = @"..\..\..\..\demodata\zugferd21\zugferd_2p1_MINIMUM_Rechnung-factur-x.xml";
+            string path = @"..\..\..\..\demodata\FacturX21\zugferd_2p1_MINIMUM_Rechnung-factur-x.xml";
             path = _makeSurePathIsCrossPlatformCompatible(path);
 
             Stream s = File.Open(path, FileMode.Open);
@@ -858,7 +858,7 @@ namespace FacturX.Test
         [TestMethod]
         public void TestMissingPropertiesAreNull()
         {
-            var path = @"..\..\..\..\demodata\zugferd21\zugferd_2p1_BASIC_Einfach-factur-x.xml";
+            var path = @"..\..\..\..\demodata\FacturX21\zugferd_2p1_BASIC_Einfach-factur-x.xml";
             path = _makeSurePathIsCrossPlatformCompatible(path);
 
             var invoiceDescriptor = InvoiceDescriptor.Load(path);
@@ -870,7 +870,7 @@ namespace FacturX.Test
         [TestMethod]
         public void TestMissingPropertiesAreEmpty()
         {
-            var path = @"..\..\..\..\demodata\zugferd21\zugferd_2p1_BASIC_Einfach-factur-x.xml";
+            var path = @"..\..\..\..\demodata\FacturX21\zugferd_2p1_BASIC_Einfach-factur-x.xml";
             path = _makeSurePathIsCrossPlatformCompatible(path);
 
             var invoiceDescriptor = InvoiceDescriptor.Load(path);
@@ -1143,7 +1143,7 @@ namespace FacturX.Test
         [TestMethod]
         public void TestLoadingSepaPreNotification()
         {
-            string path = @"..\..\..\..\demodata\zugferd21\zugferd_2p1_EN16931_SEPA_Prenotification.xml";
+            string path = @"..\..\..\..\demodata\FacturX21\zugferd_2p1_EN16931_SEPA_Prenotification.xml";
             path = _makeSurePathIsCrossPlatformCompatible(path);
 
             var invoiceDescriptor = InvoiceDescriptor.Load(path);
@@ -1681,7 +1681,7 @@ namespace FacturX.Test
             Assert.AreEqual(loadedInvoice.ShipTo.Country, CountryCodes.DE);
             Assert.AreEqual(loadedInvoice.ShipTo.CountrySubdivisionName, "Hessen");
         }
-        
+
 
         [TestMethod]
         public void TestParty_WithTaxRegistration()
@@ -1868,7 +1868,7 @@ namespace FacturX.Test
         [TestMethod]
         public void TestOrderInformation()
         {
-            string path = @"..\..\..\..\demodata\zugferd21\zugferd_2p1_EXTENDED_Warenrechnung-factur-x.xml";
+            string path = @"..\..\..\..\demodata\FacturX21\zugferd_2p1_EXTENDED_Warenrechnung-factur-x.xml";
             path = _makeSurePathIsCrossPlatformCompatible(path);
 
             DateTime timestamp = DateTime.Now.Date;
@@ -3302,7 +3302,7 @@ namespace FacturX.Test
         [TestMethod]
         public void TestBuyerOrderReferenceLineId()
         {
-            string path = @"..\..\..\..\demodata\zugferd22\zugferd_2p2_EXTENDED_Fremdwaehrung-factur-x.xml";
+            string path = @"..\..\..\..\demodata\FacturX22\zugferd_2p2_EXTENDED_Fremdwaehrung-factur-x.xml";
             path = _makeSurePathIsCrossPlatformCompatible(path);
 
             Stream s = File.Open(path, FileMode.Open);
@@ -3490,7 +3490,7 @@ namespace FacturX.Test
         [TestMethod]
         public void TestSpecifiedTradePaymentTermsDueDate()
         {
-            string path = @"..\..\..\..\documentation\zugferd23en\Examples\2. BASIC\BASIC_Einfach\factur-x.xml";
+            string path = @"..\..\..\..\documentation\FacturX23en\Examples\2. BASIC\BASIC_Einfach\factur-x.xml";
             path = _makeSurePathIsCrossPlatformCompatible(path);
 
             InvoiceDescriptor desc = InvoiceDescriptor.Load(path);
@@ -3502,7 +3502,7 @@ namespace FacturX.Test
         [TestMethod]
         public void TestSpecifiedTradePaymentTermsDescription()
         {
-            string path = @"..\..\..\..\documentation\zugferd23en\Examples\4. EXTENDED\EXTENDED_Warenrechnung\factur-x.xml";
+            string path = @"..\..\..\..\documentation\FacturX23en\Examples\4. EXTENDED\EXTENDED_Warenrechnung\factur-x.xml";
             path = _makeSurePathIsCrossPlatformCompatible(path);
 
             InvoiceDescriptor desc = InvoiceDescriptor.Load(path);
@@ -3514,7 +3514,7 @@ namespace FacturX.Test
         [TestMethod]
         public void TestSpecifiedTradePaymentTermsCalculationPercent()
         {
-            string path = @"..\..\..\..\documentation\zugferd23en\Examples\4. EXTENDED\EXTENDED_Warenrechnung\factur-x.xml";
+            string path = @"..\..\..\..\documentation\FacturX23en\Examples\4. EXTENDED\EXTENDED_Warenrechnung\factur-x.xml";
             path = _makeSurePathIsCrossPlatformCompatible(path);
 
             InvoiceDescriptor desc = InvoiceDescriptor.Load(path);
@@ -3525,7 +3525,7 @@ namespace FacturX.Test
         [TestMethod]
         public void TestTradeLineItemUnitChargeFreePackageQuantity()
         {
-            string path = @"..\..\..\..\documentation\zugferd23en\Examples\4. EXTENDED\EXTENDED_Warenrechnung\factur-x.xml";
+            string path = @"..\..\..\..\documentation\FacturX23en\Examples\4. EXTENDED\EXTENDED_Warenrechnung\factur-x.xml";
             path = _makeSurePathIsCrossPlatformCompatible(path);
 
             InvoiceDescriptor desc = InvoiceDescriptor.Load(path);
@@ -3583,7 +3583,7 @@ namespace FacturX.Test
         [TestMethod]
         public void TestInvoiceExemptions()
         {
-            string path = @"..\..\..\..\documentation\zugferd23de\Beispiele\4. EXTENDED\EXTENDED_InnergemeinschLieferungMehrereBestellungen\factur-x.xml";
+            string path = @"..\..\..\..\documentation\FacturX23de\Beispiele\4. EXTENDED\EXTENDED_InnergemeinschLieferungMehrereBestellungen\factur-x.xml";
             path = _makeSurePathIsCrossPlatformCompatible(path);
 
             InvoiceDescriptor desc = InvoiceDescriptor.Load(path);
@@ -3665,7 +3665,7 @@ namespace FacturX.Test
         [TestMethod]
         public void TestLoadingCurrency()
         {
-            string path = @"..\..\..\..\demodata\zugferd21\zugferd_2p1_EXTENDED_Warenrechnung-factur-x.xml";
+            string path = @"..\..\..\..\demodata\FacturX21\zugferd_2p1_EXTENDED_Warenrechnung-factur-x.xml";
             path = _makeSurePathIsCrossPlatformCompatible(path);
 
             Stream s = File.Open(path, FileMode.Open);
@@ -3680,7 +3680,7 @@ namespace FacturX.Test
         [TestMethod]
         public void TestLoadingSellerCountry()
         {
-            string path = @"..\..\..\..\demodata\zugferd21\zugferd_2p1_EXTENDED_Warenrechnung-factur-x.xml";
+            string path = @"..\..\..\..\demodata\FacturX21\zugferd_2p1_EXTENDED_Warenrechnung-factur-x.xml";
             path = _makeSurePathIsCrossPlatformCompatible(path);
 
             Stream s = File.Open(path, FileMode.Open);
@@ -3694,7 +3694,7 @@ namespace FacturX.Test
         [TestMethod]
         public void TestLoadingBuyerCountry()
         {
-            string path = @"..\..\..\..\demodata\zugferd21\zugferd_2p1_EXTENDED_Warenrechnung-factur-x.xml";
+            string path = @"..\..\..\..\demodata\FacturX21\zugferd_2p1_EXTENDED_Warenrechnung-factur-x.xml";
             path = _makeSurePathIsCrossPlatformCompatible(path);
 
             Stream s = File.Open(path, FileMode.Open);
@@ -3709,14 +3709,14 @@ namespace FacturX.Test
         public void TestLoadingInvoiceType()
         {
             // load standrd invoice
-            string path = @"..\..\..\..\demodata\zugferd21\zugferd_2p1_EXTENDED_Warenrechnung-factur-x.xml";
+            string path = @"..\..\..\..\demodata\FacturX21\zugferd_2p1_EXTENDED_Warenrechnung-factur-x.xml";
             path = _makeSurePathIsCrossPlatformCompatible(path);
             InvoiceDescriptor desc = InvoiceDescriptor.Load(path);
 
             Assert.AreEqual(desc.Type, InvoiceType.Invoice);
 
             // load correction
-            path = @"..\..\..\..\documentation\zugferd23en\Examples\4. EXTENDED\EXTENDED_Rechnungskorrektur\factur-x.xml";
+            path = @"..\..\..\..\documentation\FacturX23en\Examples\4. EXTENDED\EXTENDED_Rechnungskorrektur\factur-x.xml";
             path = _makeSurePathIsCrossPlatformCompatible(path);
             desc = InvoiceDescriptor.Load(path);
 
@@ -3776,7 +3776,7 @@ namespace FacturX.Test
         [TestMethod]
         public void TestAlternateNamespace()
         {
-            string path = @"..\..\..\..\demodata\zugferd22\zugferd_23_namespace.xml";
+            string path = @"..\..\..\..\demodata\FacturX22\zugferd_23_namespace.xml";
             path = _makeSurePathIsCrossPlatformCompatible(path);
 
             InvoiceDescriptor invoice = InvoiceDescriptor.Load(path);
@@ -3790,7 +3790,7 @@ namespace FacturX.Test
         [TestMethod]
         public void TestLocalNamespace()
         {
-            string path = @"..\..\..\..\demodata\zugferd22\zugferd_23_local_namespaces.xml";
+            string path = @"..\..\..\..\demodata\FacturX22\zugferd_23_local_namespaces.xml";
             path = _makeSurePathIsCrossPlatformCompatible(path);
 
             InvoiceDescriptor invoice = InvoiceDescriptor.Load(path);

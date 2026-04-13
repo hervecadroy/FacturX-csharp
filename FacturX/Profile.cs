@@ -105,9 +105,16 @@ namespace FacturX
 
                 // v2
                 { "urn:FacturX.de:2p0:minimum", Profile.Minimum },
+                { "urn:zugferd.de:2p0:minimum", Profile.Minimum },
                 { "urn:cen.eu:en16931:2017#compliant#urn:FacturX.de:2p0:basic", Profile.Basic },
+                { "urn:cen.eu:en16931:2017#compliant#urn:zugferd.de:2p0:basic", Profile.Basic },
+                { "urn:FacturX.de:2p0:basicwl", Profile.BasicWL },
+                { "urn:zugferd.de:2p0:basicwl", Profile.BasicWL },
                 { "urn:cen.eu:en16931:2017", Profile.Comfort },
+                { "urn:cen.eu:en16931:2017#compliant#urn:FacturX.de:2p0:comfort", Profile.Comfort },
+                { "urn:cen.eu:en16931:2017#compliant#urn:zugferd.de:2p0:comfort", Profile.Comfort },
                 { "urn:cen.eu:en16931:2017#conformant#urn:FacturX.de:2p0:extended", Profile.Extended },
+                { "urn:cen.eu:en16931:2017#conformant#urn:zugferd.de:2p0:extended", Profile.Extended },
 
                 // v2.3
                 { "urn:factur-x.eu:1p0:minimum", Profile.Minimum },

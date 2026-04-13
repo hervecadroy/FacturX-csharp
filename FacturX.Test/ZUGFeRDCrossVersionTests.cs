@@ -195,15 +195,15 @@ namespace FacturX.Test
         [TestMethod]
         public void TestGetVersion()
         {
-            string path = @"..\..\..\..\demodata\zugferd10\ZUGFeRD_1p0_COMFORT_Einfach.xml";
+            string path = @"..\..\..\..\demodata\FacturX10\ZUGFeRD_1p0_COMFORT_Einfach.xml";
             path = _makeSurePathIsCrossPlatformCompatible(path);
             Assert.AreEqual(InvoiceDescriptor.GetVersion(path), FacturXVersion.Version1);
 
-            path = @"..\..\..\..\demodata\zugferd20\zugferd_2p0_BASIC_Einfach.xml";
+            path = @"..\..\..\..\demodata\FacturX20\zugferd_2p0_BASIC_Einfach.xml";
             path = _makeSurePathIsCrossPlatformCompatible(path);
             Assert.AreEqual(InvoiceDescriptor.GetVersion(path), FacturXVersion.Version20);
 
-            path = @"..\..\..\..\demodata\zugferd21\zugferd_2p1_BASIC_Einfach-factur-x.xml";
+            path = @"..\..\..\..\demodata\FacturX21\zugferd_2p1_BASIC_Einfach-factur-x.xml";
             path = _makeSurePathIsCrossPlatformCompatible(path);
             Assert.AreEqual(InvoiceDescriptor.GetVersion(path), FacturXVersion.Version23);
 
@@ -1147,7 +1147,7 @@ namespace FacturX.Test
             ms.Position = 0;
 
             // convert memory stream to string
-            string xmlContent = Encoding.UTF8.GetString(ms.ToArray());;
+            string xmlContent = Encoding.UTF8.GetString(ms.ToArray()); ;
 
             // load dom, find any empty elements (elements without child nodes and without value) and fail if any is found
             var doc = XDocument.Parse(xmlContent, LoadOptions.SetLineInfo);
@@ -1188,7 +1188,7 @@ namespace FacturX.Test
         } // !TestAvoidEmptyElementsWithMinimalInvoice()
 
 
-        [TestMethod]        
+        [TestMethod]
         [DataRow(FacturXVersion.Version20, FacturXFormats.CII, Profile.Minimum, false)]
         [DataRow(FacturXVersion.Version23, FacturXFormats.CII, Profile.Minimum, false)]
         [DataRow(FacturXVersion.Version1, FacturXFormats.CII, Profile.Basic, false)]
@@ -1196,7 +1196,7 @@ namespace FacturX.Test
         [DataRow(FacturXVersion.Version23, FacturXFormats.CII, Profile.Basic, false)]
         [DataRow(FacturXVersion.Version1, FacturXFormats.CII, Profile.Comfort, false)]
         [DataRow(FacturXVersion.Version20, FacturXFormats.CII, Profile.Comfort, false)]
-        [DataRow(FacturXVersion.Version23, FacturXFormats.CII, Profile.Comfort, false)]        
+        [DataRow(FacturXVersion.Version23, FacturXFormats.CII, Profile.Comfort, false)]
         [DataRow(FacturXVersion.Version1, FacturXFormats.CII, Profile.Extended, true)]
         [DataRow(FacturXVersion.Version20, FacturXFormats.CII, Profile.Extended, true)]
         [DataRow(FacturXVersion.Version23, FacturXFormats.CII, Profile.Extended, true)]
@@ -1208,8 +1208,8 @@ namespace FacturX.Test
             {
                 Name = "ShipTo",
                 City = "ShipToCity"
-            };            
-            
+            };
+
             MemoryStream ms = new MemoryStream();
             desc.Save(ms, version, profile, format);
             ms.Seek(0, SeekOrigin.Begin);
@@ -1218,7 +1218,7 @@ namespace FacturX.Test
             Assert.IsNotNull(loadedInvoice.TradeLineItems);
 
             if (shallBePresent)
-            {                
+            {
                 Assert.IsNotNull(loadedInvoice.TradeLineItems.First().ShipTo);
                 Assert.IsNull(loadedInvoice.TradeLineItems.First().UltimateShipTo);
 
@@ -1241,7 +1241,7 @@ namespace FacturX.Test
         /// </summary>
         [TestMethod]
         [DataRow(FacturXVersion.Version20, Profile.Comfort)]
-        [DataRow(FacturXVersion.Version20, Profile.Extended)]        
+        [DataRow(FacturXVersion.Version20, Profile.Extended)]
         [DataRow(FacturXVersion.Version23, Profile.Comfort)]
         [DataRow(FacturXVersion.Version23, Profile.Extended)]
         [DataRow(FacturXVersion.Version23, Profile.XRechnung)]

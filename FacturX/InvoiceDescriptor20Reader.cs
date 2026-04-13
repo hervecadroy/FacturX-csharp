@@ -450,11 +450,16 @@ namespace FacturX
             List<string> validURIs = new List<string>()
                 {
                     "urn:cen.eu:EN16931:2017#conformant#urn:FacturX.de:2p0:extended", // Profil EXTENDED
+                    "urn:cen.eu:en16931:2017#conformant#urn:zugferd.de:2p0:extended", // Legacy EXTENDED
                     "urn:cen.eu:EN16931:2017", // Profil EN 16931 (COMFORT)" +
                     "urn:cen.eu:en16931:2017#compliant#urn:FacturX.de:2p0:comfort", // Profil COMFORT
+                    "urn:cen.eu:en16931:2017#compliant#urn:zugferd.de:2p0:comfort", // Legacy COMFORT
                     "urn:cen.eu:EN16931:2017#compliant#urn:FacturX.de:2p0:basic", // Profil BASIC
+                    "urn:cen.eu:en16931:2017#compliant#urn:zugferd.de:2p0:basic", // Legacy BASIC
                     "urn:FacturX.de:2p0:basicwl", // Profil BASIC WL
+                    "urn:zugferd.de:2p0:basicwl", // Legacy BASIC WL
                     "urn:FacturX.de:2p0:minimum" // Profil MINIMUM
+                    ,"urn:zugferd.de:2p0:minimum" // Legacy MINIMUM
                 };
 
             return _IsReadableByThisReaderVersion(stream, validURIs);

@@ -27,7 +27,7 @@ namespace FacturX.PDF.Test
         [TestMethod]
         public async Task BasicLoadExampleFile()
         {
-            string path = @"..\..\..\..\documentation\zugferd23en\Examples\4. EXTENDED\EXTENDED_Warenrechnung\EXTENDED_Warenrechnung.pdf";
+            string path = @"..\..\..\..\documentation\FacturX23en\Examples\4. EXTENDED\EXTENDED_Warenrechnung\EXTENDED_Warenrechnung.pdf";
             path = _makeSurePathIsCrossPlatformCompatible(path);
             InvoiceDescriptor desc = await InvoicePdfProcessor.LoadFromPdfAsync(path);
 
@@ -48,7 +48,7 @@ namespace FacturX.PDF.Test
         [TestMethod]
         public async Task BasicLoadFileWithNonLowerXMLName()
         {
-            string path = @"..\..\..\..\documentation\zugferd10\Beispiele\ZUGFeRD_1p0_BASIC_Einfach.pdf";
+            string path = @"..\..\..\..\documentation\FacturX10\Beispiele\ZUGFeRD_1p0_BASIC_Einfach.pdf";
             path = _makeSurePathIsCrossPlatformCompatible(path);
 
             InvoiceDescriptor? desc = await InvoicePdfProcessor.LoadFromPdfAsync(path);
