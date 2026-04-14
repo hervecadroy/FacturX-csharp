@@ -28,7 +28,7 @@ jobs:
         run: dotnet pack -c Release --no-build /p:Version=${GITHUB_REF_NAME#v}
 
       - name: Push package
-        run: dotnet nuget push "**/*.nupkg" --skip-duplicate --source https://api.nuget.org/v3/index.json --api-key ${{ secrets.NUGET_API_KEY }}
+        run: dotnet nuget push "./Facturx/bin/Release/*.nupkg" --skip-duplicate --source https://api.nuget.org/v3/index.json --api-key ${{ secrets.NUGET_API_KEY }}
 
       - name: Push symbols
-        run: dotnet nuget push "**/*.snupkg" --skip-duplicate --source https://api.nuget.org/v3/index.json --api-key ${{ secrets.NUGET_API_KEY }}
+        run: dotnet nuget push "./Facturx/bin/Release/*.snupkg" --skip-duplicate --source https://api.nuget.org/v3/index.json --api-key ${{ secrets.NUGET_API_KEY }}
