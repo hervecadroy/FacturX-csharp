@@ -127,7 +127,12 @@ namespace FacturX
         /// </summary>
         /// The free text contains payment details.
         PMD,
-
+        
+        /// <summary>
+        /// Delivery information
+        /// </summary>
+        DEL,
+        
         /// <summary>
         /// Delivery instructions
         /// </summary>
