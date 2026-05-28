@@ -3322,7 +3322,7 @@ namespace FacturX.Test
 
             MemoryStream ms = new MemoryStream();
 
-            desc.Save(ms, ZUGFeRDVersion.Version23, Profile.Extended);
+            desc.Save(ms, FacturXVersion.Version23, Profile.Extended);
             ms.Seek(0, SeekOrigin.Begin);
 
             InvoiceDescriptor loadedInvoice = InvoiceDescriptor.Load(ms);

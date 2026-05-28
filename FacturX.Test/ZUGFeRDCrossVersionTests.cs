@@ -1381,7 +1381,7 @@ namespace FacturX.Test
             };
 
             MemoryStream ublStream = new MemoryStream();
-            desc.Save(ublStream, ZUGFeRDVersion.Version23, Profile.XRechnung, ZUGFeRDFormats.UBL);
+            desc.Save(ublStream, FacturXVersion.Version23, Profile.XRechnung, FacturXFormats.UBL);
 
             XmlDocument ublDoc = new XmlDocument();
             ublDoc.Load(ublStream);
@@ -1411,7 +1411,7 @@ namespace FacturX.Test
 
             // same for CII
             MemoryStream ciiStream = new MemoryStream();
-            desc.Save(ciiStream, ZUGFeRDVersion.Version23, Profile.XRechnung, ZUGFeRDFormats.CII);
+            desc.Save(ciiStream, FacturXVersion.Version23, Profile.XRechnung, FacturXFormats.CII);
             XmlDocument ciiDoc = new XmlDocument();
             ciiDoc.Load(ciiStream);
 
