@@ -17,7 +17,6 @@
  * under the License.
  */
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Xml;
 using System.Xml.Linq;
 
@@ -1489,6 +1488,18 @@ namespace FacturX.Test
                 Country = CountryCodes.DE
             };
 
+            desc.Payer = new Party() // most of this information will NOT be stored in the output file
+            {
+                Name = "Payer",
+                ContactName = "Max Mustermann",
+                Postcode = "83022",
+                City = "Rosenheim",
+                Street = "Münchnerstraße 123",
+                AddressLine3 = "EG links",
+                CountrySubdivisionName = "Bayern",
+                Country = CountryCodes.DE
+            };
+
             MemoryStream ms = new MemoryStream();
 
             // test with Comfort
@@ -1514,6 +1525,14 @@ namespace FacturX.Test
             Assert.AreEqual(loadedInvoice.Payee.CountrySubdivisionName, String.Empty);
             Assert.IsNull(loadedInvoice.Payee.Country);
 
+            Assert.AreEqual("Payer", loadedInvoice.Payer.Name);
+            Assert.IsNull(loadedInvoice.Payer.ContactName);
+            Assert.AreEqual(String.Empty, loadedInvoice.Payer.Postcode);
+            Assert.AreEqual(String.Empty, loadedInvoice.Payer.City);
+            Assert.AreEqual(String.Empty, loadedInvoice.Payer.Street);
+            Assert.AreEqual(String.Empty, loadedInvoice.Payer.AddressLine3);
+            Assert.AreEqual(String.Empty, loadedInvoice.Payer.CountrySubdivisionName);
+            Assert.IsNull(loadedInvoice.Payer.Country);
 
             // test with Extended
             ms = new MemoryStream();
@@ -1544,6 +1563,15 @@ namespace FacturX.Test
             Assert.AreEqual(loadedInvoice.Payee.CountrySubdivisionName, "Bayern");
             Assert.AreEqual(loadedInvoice.Payee.Country, CountryCodes.DE);
 
+            Assert.AreEqual("Payer", loadedInvoice.Payer.Name);
+            Assert.AreEqual("Max Mustermann", loadedInvoice.Payer.ContactName);
+            Assert.AreEqual("83022", loadedInvoice.Payer.Postcode);
+            Assert.AreEqual("Rosenheim", loadedInvoice.Payer.City);
+            Assert.AreEqual("Münchnerstraße 123", loadedInvoice.Payer.Street);
+            Assert.AreEqual("EG links", loadedInvoice.Payer.AddressLine3);
+            Assert.AreEqual("Bayern", loadedInvoice.Payer.CountrySubdivisionName);
+            Assert.AreEqual(CountryCodes.DE, loadedInvoice.Payer.Country);
+
             //
             // Check the output in the XML for Comfort.
             // REM: In Comfort only ID, GlobalID, Name, and SpecifiedLegalOrganization are allowed.
@@ -1551,6 +1579,13 @@ namespace FacturX.Test
             desc.Payee = new Party()
             {
                 ID = new GlobalID(null, "SL1001"),
+                Name = "Max Mustermann"
+                // Country is not set and should not be written into the XML
+            };
+
+            desc.Payer = new Party()
+            {
+                ID = new GlobalID(null, "SL1002"),
                 Name = "Max Mustermann"
                 // Country is not set and should not be written into the XML
             };
@@ -1578,6 +1613,22 @@ namespace FacturX.Test
                 ?.Element(ram + "ApplicableHeaderTradeSettlement")
                 ?.Element(ram + "PayeeTradeParty")
                 ?.Element(ram + "PostalTradeAddress")); // !!!
+
+            Assert.AreEqual("SL1002", doc.Root
+                ?.Element(rsm + "SupplyChainTradeTransaction")
+                ?.Element(ram + "ApplicableHeaderTradeSettlement")
+                ?.Element(ram + "PayerTradeParty")
+                ?.Element(ram + "ID")?.Value);
+            Assert.AreEqual("Max Mustermann", doc.Root
+                ?.Element(rsm + "SupplyChainTradeTransaction")
+                ?.Element(ram + "ApplicableHeaderTradeSettlement")
+                ?.Element(ram + "PayerTradeParty")
+                ?.Element(ram + "Name")?.Value);
+            Assert.IsNull(doc.Root
+                ?.Element(rsm + "SupplyChainTradeTransaction")
+                ?.Element(ram + "ApplicableHeaderTradeSettlement")
+                ?.Element(ram + "PayerTradeParty")
+                ?.Element(ram + "PostalTradeAddress"));
 
         } // !TestMinimumInvoice()
 
@@ -2028,6 +2079,18 @@ namespace FacturX.Test
                 Country = CountryCodes.DE
             };
 
+            desc.Payer = new Party()
+            {
+                Name = "Test",
+                ContactName = "Max Mustermann",
+                Postcode = "83022",
+                City = "Rosenheim",
+                Street = "Münchnerstraße 123",
+                AddressLine3 = "EG links",
+                CountrySubdivisionName = "Bayern",
+                Country = CountryCodes.DE
+            };
+
             desc.AddDebitorFinancialAccount(iban: "DE02120300000000202052", bic: "BYLADEM1001", bankName: "Musterbank");
             desc.BillingPeriodStart = timestamp;
             desc.BillingPeriodEnd = timestamp.AddDays(14);
@@ -2176,6 +2239,14 @@ namespace FacturX.Test
             Assert.AreEqual("Bayern", loadedInvoice.Payee.CountrySubdivisionName);
             Assert.AreEqual(CountryCodes.DE, loadedInvoice.Payee.Country);
 
+            Assert.AreEqual("Test", loadedInvoice.Payer.Name);
+            Assert.AreEqual("Max Mustermann", loadedInvoice.Payer.ContactName);
+            Assert.AreEqual("83022", loadedInvoice.Payer.Postcode);
+            Assert.AreEqual("Rosenheim", loadedInvoice.Payer.City);
+            Assert.AreEqual("Münchnerstraße 123", loadedInvoice.Payer.Street);
+            Assert.AreEqual("EG links", loadedInvoice.Payer.AddressLine3);
+            Assert.AreEqual("Bayern", loadedInvoice.Payer.CountrySubdivisionName);
+            Assert.AreEqual(CountryCodes.DE, loadedInvoice.Payer.Country);
 
             var tax = loadedInvoice.Taxes.FirstOrDefault(t => t.BasisAmount == 275m);
             Assert.IsNotNull(tax);
@@ -3312,13 +3383,13 @@ namespace FacturX.Test
             Assert.AreEqual(desc.GetTradeLineItems().First().BuyerOrderReferencedDocument.LineID, "1");
             Assert.AreEqual(desc.GetTradeLineItems().First().BuyerOrderReferencedDocument.ID, "ORDER84359");
         }
-        
+
         [TestMethod]
         public void TestSellerOrderReferenceLineId()
         {
             InvoiceDescriptor desc = this._InvoiceProvider.CreateInvoice();
 
-            desc.TradeLineItems[0].SellerOrderReferencedDocument = new SellerOrderReferencedDocument { ID = "ORDER84359" , IssueDateTime = new DateTime(2024, 6, 1)};
+            desc.TradeLineItems[0].SellerOrderReferencedDocument = new SellerOrderReferencedDocument { ID = "ORDER84359", IssueDateTime = new DateTime(2024, 6, 1) };
 
             MemoryStream ms = new MemoryStream();
 

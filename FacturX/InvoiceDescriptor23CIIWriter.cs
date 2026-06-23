@@ -20,14 +20,13 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Net;
 using System.Text;
 
 
 namespace FacturX
 {
     internal class InvoiceDescriptor23CIIWriter : IInvoiceDescriptorWriter
-    {        
+    {
         private ProfileAwareXmlTextWriter _Writer;
         private InvoiceDescriptor _Descriptor;
 
@@ -268,10 +267,10 @@ namespace FacturX
 
                         _Writer.WriteOptionalElementString("ram", "SellerAssignedID", includedItem.SellerAssignedID);
                         _Writer.WriteOptionalElementString("ram", "BuyerAssignedID", includedItem.BuyerAssignedID);
-                        _Writer.WriteOptionalElementString("ram", "IndustryAssignedID", includedItem.IndustryAssignedID); 
+                        _Writer.WriteOptionalElementString("ram", "IndustryAssignedID", includedItem.IndustryAssignedID);
                         _Writer.WriteOptionalElementString("ram", "Name", includedItem.Name); // BT-X-18
                         _Writer.WriteOptionalElementString("ram", "Description", includedItem.Description);
-                        
+
                         if (includedItem.UnitQuantity.HasValue)
                         {
                             _writeElementWithAttributeWithPrefix(_Writer, "ram", "UnitQuantity", "unitCode", includedItem.UnitCode.Value.EnumToString(), _formatDecimal(includedItem.UnitQuantity, 4));
@@ -856,17 +855,18 @@ namespace FacturX
             //   6. InvoicerTradeParty (optional)
             //   7. InvoiceeTradeParty (optional)
             //   8. PayeeTradeParty (optional)
-            //   9. TaxApplicableTradeCurrencyExchange (optional)
-            //  10. SpecifiedTradeSettlementPaymentMeans (optional)
-            //  11. ApplicableTradeTax (optional)
-            //  12. BillingSpecifiedPeriod (optional)
-            //  13. SpecifiedTradeAllowanceCharge (optional)
-            //  14. SpecifiedLogisticsServiceCharge (optional)
-            //  15. SpecifiedTradePaymentTerms (optional)
-            //  16. SpecifiedTradeSettlementHeaderMonetarySummation
-            //  17. InvoiceReferencedDocument (optional)
-            //  18. ReceivableSpecifiedTradeAccountingAccount (optional)
-            //  19. SpecifiedAdvancePayment (optional)
+            //   9. PayerTradeParty (optional)
+            //   10. TaxApplicableTradeCurrencyExchange (optional)
+            //  11. SpecifiedTradeSettlementPaymentMeans (optional)
+            //  12. ApplicableTradeTax (optional)
+            //  13. BillingSpecifiedPeriod (optional)
+            //  14. SpecifiedTradeAllowanceCharge (optional)
+            //  15. SpecifiedLogisticsServiceCharge (optional)
+            //  16. SpecifiedTradePaymentTerms (optional)
+            //  17. SpecifiedTradeSettlementHeaderMonetarySummation
+            //  18. InvoiceReferencedDocument (optional)
+            //  19. ReceivableSpecifiedTradeAccountingAccount (optional)
+            //  20. SpecifiedAdvancePayment (optional)
 
             //   1. CreditorReferenceID (BT-90) is only required/allowed on DirectDebit (BR-DE-30)
             if ((this._Descriptor.PaymentMeans?.TypeCode == PaymentMeansTypeCodes.DirectDebit || this._Descriptor.PaymentMeans?.TypeCode == PaymentMeansTypeCodes.SEPADirectDebit) &&
@@ -900,8 +900,11 @@ namespace FacturX
             //   8. PayeeTradeParty (optional), BG-10
             _writeOptionalParty(_Writer, PartyTypes.PayeeTradeParty, this._Descriptor.Payee, ALL_PROFILES ^ Profile.Minimum);
 
+            // 9. PayerTradeParty (optional), EXT-FR-FE-BG-02
+            _writeOptionalParty(_Writer, PartyTypes.PayerTradeParty, this._Descriptor.Payer, ALL_PROFILES ^ Profile.Minimum);
+
             #region SpecifiedTradeSettlementPaymentMeans
-            //  10. SpecifiedTradeSettlementPaymentMeans (optional), BG-16
+            //  11. SpecifiedTradeSettlementPaymentMeans (optional), BG-16
 
             if (!this._Descriptor.AnyCreditorFinancialAccount() && !this._Descriptor.AnyDebitorFinancialAccount())
             {
@@ -981,12 +984,12 @@ namespace FacturX
             #endregion
 
             #region ApplicableTradeTax
-            //  11. ApplicableTradeTax (optional)            
+            //  12. ApplicableTradeTax (optional)            
             _writeOptionalTaxes(_Writer, options);
             #endregion
 
             #region BillingSpecifiedPeriod
-            //  12. BillingSpecifiedPeriod (optional)
+            //  13. BillingSpecifiedPeriod (optional)
             if (_Descriptor.BillingPeriodStart.HasValue || _Descriptor.BillingPeriodEnd.HasValue)
             {
                 _Writer.WriteStartElement("ram", "BillingSpecifiedPeriod", ALL_PROFILES ^ Profile.Minimum);
@@ -1007,7 +1010,7 @@ namespace FacturX
             }
             #endregion
 
-            //  13. SpecifiedTradeAllowanceCharge (optional)
+            //  14. SpecifiedTradeAllowanceCharge (optional)
             foreach (TradeAllowance tradeAllowance in this._Descriptor.GetTradeAllowances())
             {
                 _WriteDocumentLevelSpecifiedTradeAllowanceCharge(_Writer, tradeAllowance);
@@ -1018,7 +1021,7 @@ namespace FacturX
                 _WriteDocumentLevelSpecifiedTradeAllowanceCharge(_Writer, tradeCharge);
             }
 
-            //  14. SpecifiedLogisticsServiceCharge (optional)
+            //  15. SpecifiedLogisticsServiceCharge (optional)
             foreach (ServiceCharge serviceCharge in this._Descriptor.GetLogisticsServiceCharges())
             {
                 _Writer.WriteStartElement("ram", "SpecifiedLogisticsServiceCharge", ALL_PROFILES ^ (Profile.XRechnung1 | Profile.XRechnung));
@@ -1044,7 +1047,7 @@ namespace FacturX
                 _Writer.WriteEndElement();
             }
 
-            //  15. SpecifiedTradePaymentTerms (optional)
+            //  16. SpecifiedTradePaymentTerms (optional)
             //  The cardinality depends on the profile.
             switch (_Descriptor.Profile)
             {
@@ -1200,8 +1203,8 @@ namespace FacturX
             _writeAmount(_Writer, "ram", "LineTotalAmount", this._Descriptor.LineTotalAmount, profile: ALL_PROFILES ^ Profile.Minimum);   // Summe der Nettobeträge aller Rechnungspositionen
             _writeOptionalAmount(_Writer, "ram", "ChargeTotalAmount", this._Descriptor.ChargeTotalAmount, profile: ALL_PROFILES ^ Profile.Minimum);       // Summe der Zuschläge auf Dokumentenebene, BT-108
             _writeOptionalAmount(_Writer, "ram", "AllowanceTotalAmount", this._Descriptor.AllowanceTotalAmount, profile: ALL_PROFILES ^ Profile.Minimum); // Summe der Abschläge auf Dokumentenebene, BT-107
-                                                                                                                                                // both fields are mandatory according to BR-FXEXT-CO-11
-                                                                                                                                                // and BR-FXEXT-CO-12
+                                                                                                                                                          // both fields are mandatory according to BR-FXEXT-CO-11
+                                                                                                                                                          // and BR-FXEXT-CO-12
 
             if (this._Descriptor.Profile == Profile.Extended)
             {
