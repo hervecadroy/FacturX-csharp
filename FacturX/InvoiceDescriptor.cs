@@ -264,6 +264,11 @@ namespace FacturX
         /// <summary>
         /// This party is optional and only relevant for Extended profile
         /// </summary>
+        public Party Payer { get; set; }
+
+        /// <summary>
+        /// This party is optional and only relevant for Extended profile
+        /// </summary>
         public Party ShipFrom { get; set; }
 
         /// <summary>
@@ -1414,7 +1419,7 @@ namespace FacturX
             this.GrandTotalAmount = grandTotalAmount;
             this.TotalPrepaidAmount = totalPrepaidAmount;
             this.DuePayableAmount = duePayableAmount;
-            this.RoundingAmount = roundingAmount;            
+            this.RoundingAmount = roundingAmount;
         } // !SetTotals()
 
 
