@@ -160,6 +160,16 @@ namespace FacturX
             retval.ShipFrom = _nodeAsParty(doc.DocumentElement, "//ram:ApplicableHeaderTradeDelivery/ram:ShipFromTradeParty", nsmgr);
             retval.ActualDeliveryDate = XmlUtils.NodeAsDateTime(doc.DocumentElement, "//ram:ApplicableHeaderTradeDelivery/ram:ActualDeliverySupplyChainEvent/ram:OccurrenceDateTime/udt:DateTimeString", nsmgr);
 
+            XmlNode receivingAdviceReferencedDocumentNode = doc.DocumentElement.SelectSingleNode("//ram:ApplicableHeaderTradeDelivery/ram:ReceivingAdviceReferencedDocument", nsmgr);
+            if (receivingAdviceReferencedDocumentNode != null)
+            {
+                retval.ReceivingAdviceReferencedDocument = new ReceivingAdviceReferencedDocument()
+                {
+                    ID = XmlUtils.NodeAsString(receivingAdviceReferencedDocumentNode, "ram:IssuerAssignedID", nsmgr),
+                    IssueDateTime = DataTypeReader.ReadFormattedIssueDateTime(receivingAdviceReferencedDocumentNode, "ram:FormattedIssueDateTime", nsmgr)
+                };
+            }
+
             string deliveryNoteNo = XmlUtils.NodeAsString(doc.DocumentElement, "//ram:ApplicableHeaderTradeDelivery/ram:DeliveryNoteReferencedDocument/ram:ID", nsmgr);
             DateTime? deliveryNoteDate = XmlUtils.NodeAsDateTime(doc.DocumentElement, "//ram:ApplicableHeaderTradeDelivery/ram:DeliveryNoteReferencedDocument/ram:IssueDateTime/udt:DateTimeString", nsmgr);
 
@@ -475,7 +485,7 @@ namespace FacturX
 
             string lineId = XmlUtils.NodeAsString(tradeLineItem, ".//ram:AssociatedDocumentLineDocument/ram:LineID", nsmgr, String.Empty);
 
-            LineStatusCodes? lineStatusCode = EnumExtensions.StringToEnum<LineStatusCodes>(XmlUtils.NodeAsString(tradeLineItem, ".//ram:AssociatedDocumentLineDocument/ram:LineStatusCode", nsmgr, null));
+            LineStatusCodes? lineStatusCode = EnumExtensions.StringToNullableEnum<LineStatusCodes>(XmlUtils.NodeAsString(tradeLineItem, ".//ram:AssociatedDocumentLineDocument/ram:LineStatusCode", nsmgr, null));
             LineStatusReasonCodes? lineStatusReasonCode = EnumExtensions.StringToNullableEnum<LineStatusReasonCodes>(XmlUtils.NodeAsString(tradeLineItem, ".//ram:AssociatedDocumentLineDocument/ram:LineStatusReasonCode", nsmgr, null));
 
             TradeLineItem item = new TradeLineItem(lineId)
@@ -503,10 +513,7 @@ namespace FacturX
                 BillingPeriodEnd = XmlUtils.NodeAsDateTime(tradeLineItem, ".//ram:BillingSpecifiedPeriod/ram:EndDateTime/udt:DateTimeString", nsmgr),
             };
 
-            if (lineStatusCode.HasValue && lineStatusReasonCode.HasValue)
-            {
-                item.SetLineStatus(lineStatusCode.Value, lineStatusReasonCode.Value);
-            }
+            item.AssociatedDocument.SetLineStatus(lineStatusCode, lineStatusReasonCode);
 
             if (tradeLineItem.SelectNodes(".//ram:SpecifiedTradeProduct/ram:ApplicableProductCharacteristic", nsmgr) != null)
             {

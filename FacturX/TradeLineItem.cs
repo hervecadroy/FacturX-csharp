@@ -128,6 +128,13 @@ namespace FacturX
         public decimal? LineTotalAmount { get; set; }
 
         /// <summary>
+        /// Gesamtbetrag der Zu- und Abschläge auf Positionsebene
+        ///
+        /// Nur im Profil Extended verfügbar. Profile nach EN 16931 verwenden dieses Feld nicht.
+        /// </summary>
+        public decimal? TotalAllowanceChargeAmount { get; set; }
+
+        /// <summary>
         /// Detailed information about the invoicing period
         ///
         /// Invoicing period start date
@@ -619,8 +626,7 @@ namespace FacturX
         /// <param name="lineStatusReasonCode">The reason code explaining the status</param>
         public TradeLineItem SetLineStatus(LineStatusCodes lineStatusCode, LineStatusReasonCodes lineStatusReasonCode)
         {
-            this.AssociatedDocument.LineStatusCode = lineStatusCode;
-            this.AssociatedDocument.LineStatusReasonCode = lineStatusReasonCode;
+            this.AssociatedDocument.SetLineStatus(lineStatusCode, lineStatusReasonCode);
             return this;
         }
 

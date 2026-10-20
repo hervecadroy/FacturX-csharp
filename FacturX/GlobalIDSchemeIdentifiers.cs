@@ -874,13 +874,13 @@ namespace FacturX
         DodAAC,
 
         /// <summary>
-        /// DGCP (Direction G�n�rale de la Comptabilit� Publique) administrative accounting identification scheme
+        /// DGCP (Direction Générale de la Comptabilité Publique) administrative accounting identification scheme
         /// </summary>
         [EnumStringValue("0145")]
         DgcpAdminAccounting,
 
         /// <summary>
-        /// DGI (Direction G�n�rale des Impots) code
+        /// DGI (Direction Générale des Impots) code
         /// </summary>
         [EnumStringValue("0146")]
         DgiCode,
@@ -952,7 +952,7 @@ namespace FacturX
         AtmInterconnectDutchKpn,
 
         /// <summary>
-        /// Identification number of economic subject (ICO) Act on State Statistics of 29 November 2'001, � 27
+        /// Identification number of economic subject (ICO) Act on State Statistics of 29 November 2'001, § 27
         /// </summary>
         [EnumStringValue("0158")]
         IcoStatisticalAct,
@@ -1036,7 +1036,7 @@ namespace FacturX
         LuxembourgCpsIndex,
 
         /// <summary>
-        /// Project Group �Lists of Properties� (PROLIST�)
+        /// Project Group “Lists of Properties” (PROLIST®)
         /// </summary>
         [EnumStringValue("0172")]
         Prolist,
@@ -1090,7 +1090,7 @@ namespace FacturX
         LithuanianMilitaryPki,
 
         /// <summary>
-        /// Num�ro d'identification suisse des enterprises (IDE), Swiss Unique Business Identification Number (UIDB)
+        /// Numéro d'identification suisse des enterprises (IDE), Swiss Unique Business Identification Number (UIDB)
         /// </summary>
         [EnumStringValue("0183")]
         SwissUidb,
@@ -1168,7 +1168,7 @@ namespace FacturX
         SingaporeENInvoiceFramework,
 
         /// <summary>
-        /// Icelandic identifier - �slensk kennitala
+        /// Icelandic identifier - Íslensk kennitala
         /// </summary>
         [EnumStringValue("0196")]
         IslenskKennitala,
@@ -1198,7 +1198,7 @@ namespace FacturX
         LithuaniaLegalEntityCode,
 
         /// <summary>
-        /// Codice Univoco Unit� Organizzativa iPA
+        /// Codice Univoco Unità Organizzativa iPA
         /// </summary>
         [EnumStringValue("0201")]
         IpAUnitCode,
@@ -1228,7 +1228,7 @@ namespace FacturX
         Coddest,
 
         /// <summary>
-        /// Registre du Commerce et de l�Industrie : RCI
+        /// Registre du Commerce et de l’Industrie : RCI
         /// </summary>
         [EnumStringValue("0206")]
         Rci,
@@ -1360,13 +1360,13 @@ namespace FacturX
         NonEuBasedCompany,
 
         /// <summary>
-        /// R�pertoire des Entreprises et des Etablissements (RIDET)
+        /// Répertoire des Entreprises et des Etablissements (RIDET)
         /// </summary>
         [EnumStringValue("0228")]
         Ridet,
 
         /// <summary>
-        /// T.A.H.I.T.I (traitement automatique hi�rarchis� des institutions de Tahiti et des �les)
+        /// T.A.H.I.T.I (traitement automatique hiérarchisé des institutions de Tahiti et des îles)
         /// </summary>
         [EnumStringValue("0229")]
         TahitiAutomaticHierarchicalInstitutionDirectory,
@@ -1420,7 +1420,7 @@ namespace FacturX
         DanishCivilRegistrationNumber,
 
         /// <summary>
-        /// Plateforme.s agr��e.s � la facturation �lectronique (PPF/PDP)
+        /// Plateforme.s agréée.s à la facturation électronique (PPF/PDP)
         /// </summary>
         [EnumStringValue("0238")]
         PpfPdp,
@@ -1432,7 +1432,7 @@ namespace FacturX
         Eaeu,
 
         /// <summary>
-        /// Register of legal persons (in French : R�pertoire des personnes morales)
+        /// Register of legal persons (in French : Répertoire des personnes morales)
         /// </summary>
         [EnumStringValue("0240")]
         RegisterOfLegalPersons

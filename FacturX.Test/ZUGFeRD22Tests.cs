@@ -19,6 +19,7 @@
 using System.Text;
 using System.Xml;
 using System.Xml.Linq;
+using System.Xml.Schema;
 
 namespace FacturX.Test
 {
@@ -26,6 +27,66 @@ namespace FacturX.Test
     public class ZUGFeRD22Tests : TestBase
     {
         private InvoiceProvider _InvoiceProvider = new InvoiceProvider();
+
+        [TestMethod]
+        [DataRow(Profile.Minimum, false)]
+        [DataRow(Profile.BasicWL, false)]
+        [DataRow(Profile.Basic, false)]
+        [DataRow(Profile.Comfort, true)]
+        [DataRow(Profile.Extended, true)]
+        [DataRow(Profile.XRechnung1, true)]
+        [DataRow(Profile.XRechnung, true)]
+        public void TestReceivingAdviceReferencedDocumentProfileBoundaries(Profile profile, bool expected)
+        {
+            InvoiceDescriptor descriptor = _InvoiceProvider.CreateInvoice();
+            descriptor.SetReceivingAdviceReferencedDocument("RECEIPT-23", new DateTime(2026, 8, 15));
+
+            using MemoryStream stream = new MemoryStream();
+            descriptor.Save(stream, FacturXVersion.Version23, profile);
+            stream.Position = 0;
+
+            InvoiceDescriptor loadedInvoice = InvoiceDescriptor.Load(stream);
+            Assert.AreEqual(expected, loadedInvoice.ReceivingAdviceReferencedDocument != null);
+            if (expected)
+            {
+                DateTime? expectedDate = profile == Profile.Extended ? new DateTime(2026, 8, 15) : (DateTime?)null;
+                ReceivingAdviceReferencedDocument receivingAdvice = loadedInvoice.ReceivingAdviceReferencedDocument;
+                Assert.IsNotNull(receivingAdvice);
+                Assert.AreEqual("RECEIPT-23", receivingAdvice.ID);
+                Assert.AreEqual(expectedDate, receivingAdvice.IssueDateTime);
+            }
+        } // !TestReceivingAdviceReferencedDocumentProfileBoundaries()
+
+
+        [TestMethod]
+        public void TestReceivingAdviceReferencedDocumentOrder()
+        {
+            InvoiceDescriptor descriptor = _InvoiceProvider.CreateInvoice();
+            descriptor.SetDespatchAdviceReferencedDocument("DESPATCH-23");
+            descriptor.SetReceivingAdviceReferencedDocument("RECEIPT-23");
+            descriptor.SetDeliveryNoteReferenceDocument("DELIVERY-23");
+
+            using MemoryStream stream = new MemoryStream();
+            descriptor.Save(stream, FacturXVersion.Version23, Profile.Extended);
+            stream.Position = 0;
+
+            XmlDocument document = new XmlDocument();
+            document.Load(stream);
+            XmlNamespaceManager namespaceManager = new XmlNamespaceManager(document.NameTable);
+            namespaceManager.AddNamespace("ram", document.DocumentElement.GetNamespaceOfPrefix("ram"));
+            XmlNode? despatchAdviceNode = document.SelectSingleNode("//ram:ApplicableHeaderTradeDelivery/ram:DespatchAdviceReferencedDocument", namespaceManager);
+            XmlNode? receivingAdviceNode = document.SelectSingleNode("//ram:ApplicableHeaderTradeDelivery/ram:ReceivingAdviceReferencedDocument", namespaceManager);
+            XmlNode? deliveryNoteNode = document.SelectSingleNode("//ram:ApplicableHeaderTradeDelivery/ram:DeliveryNoteReferencedDocument", namespaceManager);
+
+            Assert.IsNotNull(despatchAdviceNode);
+            Assert.IsNotNull(receivingAdviceNode);
+            Assert.IsNotNull(deliveryNoteNode);
+            Assert.IsNotNull(receivingAdviceNode.ParentNode);
+            List<XmlNode> deliveryChildren = receivingAdviceNode.ParentNode.ChildNodes.Cast<XmlNode>().ToList();
+            Assert.IsTrue(deliveryChildren.IndexOf(despatchAdviceNode) < deliveryChildren.IndexOf(receivingAdviceNode));
+            Assert.IsTrue(deliveryChildren.IndexOf(receivingAdviceNode) < deliveryChildren.IndexOf(deliveryNoteNode));
+        } // !TestReceivingAdviceReferencedDocumentOrder()
+
 
 
 
@@ -116,6 +177,222 @@ namespace FacturX.Test
             Assert.AreEqual(loadedInvoice.TradeLineItems[2].AssociatedDocument.LineStatusCode, LineStatusCodes.DocumentationClaim);
             Assert.AreEqual(loadedInvoice.TradeLineItems[2].AssociatedDocument.LineStatusReasonCode, LineStatusReasonCodes.INFORMATION);
         } // !TestLineStatusCode()
+
+
+        [TestMethod]
+        public void TestTotalAllowanceChargeAmountWriterProfiles()
+        {
+            InvoiceDescriptor desc = this._InvoiceProvider.CreateInvoice();
+            desc.TradeLineItems[0].TotalAllowanceChargeAmount = 12.5m;
+
+            using MemoryStream extendedStream = new();
+            desc.Save(extendedStream, FacturXVersion.Version23, Profile.Extended);
+            extendedStream.Position = 0;
+
+            XmlDocument extendedDocument = new();
+            extendedDocument.Load(extendedStream);
+            XmlNamespaceManager extendedNamespaceManager = new(extendedDocument.NameTable);
+            extendedNamespaceManager.AddNamespace("ram", "urn:un:unece:uncefact:data:standard:ReusableAggregateBusinessInformationEntity:100");
+            XmlNode? extendedAmountNode = extendedDocument.SelectSingleNode("//ram:SpecifiedTradeSettlementLineMonetarySummation/ram:TotalAllowanceChargeAmount", extendedNamespaceManager);
+
+            Assert.IsNotNull(extendedAmountNode);
+            Assert.AreEqual("12.50", extendedAmountNode.InnerText);
+
+            using MemoryStream comfortStream = new();
+            desc.Save(comfortStream, FacturXVersion.Version23, Profile.Comfort);
+            comfortStream.Position = 0;
+
+            XmlDocument comfortDocument = new();
+            comfortDocument.Load(comfortStream);
+            XmlNamespaceManager comfortNamespaceManager = new(comfortDocument.NameTable);
+            comfortNamespaceManager.AddNamespace("ram", "urn:un:unece:uncefact:data:standard:ReusableAggregateBusinessInformationEntity:100");
+            XmlNode? comfortAmountNode = comfortDocument.SelectSingleNode("//ram:SpecifiedTradeSettlementLineMonetarySummation/ram:TotalAllowanceChargeAmount", comfortNamespaceManager);
+
+            Assert.IsNull(comfortAmountNode);
+        } // !TestTotalAllowanceChargeAmountWriterProfiles()
+
+
+        [TestMethod]
+        public void TestTotalAllowanceChargeAmountReader()
+        {
+            InvoiceDescriptor desc = this._InvoiceProvider.CreateInvoice();
+
+            using MemoryStream invoiceStream = new();
+            desc.Save(invoiceStream, FacturXVersion.Version23, Profile.Extended);
+            invoiceStream.Position = 0;
+
+            XmlDocument invoiceDocument = new();
+            invoiceDocument.Load(invoiceStream);
+            const string ramNamespace = "urn:un:unece:uncefact:data:standard:ReusableAggregateBusinessInformationEntity:100";
+            XmlNamespaceManager namespaceManager = new(invoiceDocument.NameTable);
+            namespaceManager.AddNamespace("ram", ramNamespace);
+            XmlNode? monetarySummationNode = invoiceDocument.SelectSingleNode("//ram:SpecifiedTradeSettlementLineMonetarySummation", namespaceManager);
+            Assert.IsNotNull(monetarySummationNode);
+
+            XmlElement totalAllowanceChargeAmountElement = invoiceDocument.CreateElement("ram", "TotalAllowanceChargeAmount", ramNamespace);
+            totalAllowanceChargeAmountElement.InnerText = "12.50";
+            monetarySummationNode.AppendChild(totalAllowanceChargeAmountElement);
+
+            using MemoryStream modifiedInvoiceStream = new();
+            invoiceDocument.Save(modifiedInvoiceStream);
+            modifiedInvoiceStream.Position = 0;
+
+            InvoiceDescriptor loadedInvoice = InvoiceDescriptor.Load(modifiedInvoiceStream);
+            Assert.AreEqual(12.5m, loadedInvoice.TradeLineItems[0].TotalAllowanceChargeAmount);
+        } // !TestTotalAllowanceChargeAmountReader()
+
+
+        [TestMethod]
+        public void TestAdvancePayment()
+        {
+            InvoiceDescriptor desc = this._InvoiceProvider.CreateInvoice();
+            AdvancePayment advancePayment = desc.AddAdvancePayment(2975m, new DateTime(2025, 6, 7));
+            advancePayment.AddIncludedTradeTax(new Tax
+            {
+                TaxAmount = 1900m,
+                TypeCode = TaxTypes.VAT,
+                CategoryCode = TaxCategoryCodes.S,
+                Percent = 19m
+            });
+            advancePayment.SetInvoiceReferencedDocument("R202506-01", new DateTime(2025, 6, 1), InvoiceType.PartialInvoice);
+
+            using MemoryStream stream = new MemoryStream();
+            desc.Save(stream, FacturXVersion.Version23, Profile.Extended);
+            stream.Seek(0, SeekOrigin.Begin);
+
+            XmlDocument document = new XmlDocument();
+            document.Load(stream);
+            XmlNamespaceManager namespaceManager = new XmlNamespaceManager(document.NameTable);
+            namespaceManager.AddNamespace("ram", "urn:un:unece:uncefact:data:standard:ReusableAggregateBusinessInformationEntity:100");
+            namespaceManager.AddNamespace("qdt", "urn:un:unece:uncefact:data:standard:QualifiedDataType:100");
+
+            XmlNode? advancePaymentNode = document.SelectSingleNode("//ram:ApplicableHeaderTradeSettlement/ram:SpecifiedAdvancePayment", namespaceManager);
+            Assert.IsNotNull(advancePaymentNode);
+            Assert.AreEqual("2975.00", advancePaymentNode.SelectSingleNode("./ram:PaidAmount", namespaceManager)?.InnerText);
+            Assert.AreEqual("20250607", advancePaymentNode.SelectSingleNode("./ram:FormattedReceivedDateTime/qdt:DateTimeString", namespaceManager)?.InnerText);
+            Assert.AreEqual("102", advancePaymentNode.SelectSingleNode("./ram:FormattedReceivedDateTime/qdt:DateTimeString", namespaceManager)?.Attributes?["format"]?.Value);
+            Assert.AreEqual("1900.00", advancePaymentNode.SelectSingleNode("./ram:IncludedTradeTax/ram:CalculatedAmount", namespaceManager)?.InnerText);
+            Assert.AreEqual("VAT", advancePaymentNode.SelectSingleNode("./ram:IncludedTradeTax/ram:TypeCode", namespaceManager)?.InnerText);
+            Assert.AreEqual("S", advancePaymentNode.SelectSingleNode("./ram:IncludedTradeTax/ram:CategoryCode", namespaceManager)?.InnerText);
+            Assert.AreEqual("19.00", advancePaymentNode.SelectSingleNode("./ram:IncludedTradeTax/ram:RateApplicablePercent", namespaceManager)?.InnerText);
+            Assert.AreEqual("R202506-01", advancePaymentNode.SelectSingleNode("./ram:InvoiceSpecifiedReferencedDocument/ram:IssuerAssignedID", namespaceManager)?.InnerText);
+            Assert.AreEqual("326", advancePaymentNode.SelectSingleNode("./ram:InvoiceSpecifiedReferencedDocument/ram:TypeCode", namespaceManager)?.InnerText);
+            Assert.AreEqual("20250601", advancePaymentNode.SelectSingleNode("./ram:InvoiceSpecifiedReferencedDocument/ram:FormattedIssueDateTime/qdt:DateTimeString", namespaceManager)?.InnerText);
+
+            string schemaPath = _makeSurePathIsCrossPlatformCompatible(@"..\..\..\..\documentation\FacturX23de\Schema\4. Factur-X_1.07.2_EXTENDED\Factur-X_1.07.2_EXTENDED.xsd");
+            XmlSchemaSet schemas = new XmlSchemaSet
+            {
+                XmlResolver = new XmlUrlResolver()
+            };
+            schemas.Add(null, schemaPath);
+            document.Schemas.Add(schemas);
+            List<string> validationErrors = new List<string>();
+            document.Validate((sender, args) => validationErrors.Add(args.Message));
+            Assert.IsEmpty(validationErrors, String.Join(Environment.NewLine, validationErrors));
+
+            stream.Seek(0, SeekOrigin.Begin);
+            InvoiceDescriptor loadedInvoice = InvoiceDescriptor.Load(stream);
+            Assert.HasCount(1, loadedInvoice.AdvancePayments);
+            AdvancePayment loadedAdvancePayment = loadedInvoice.AdvancePayments[0];
+            Assert.AreEqual(2975m, loadedAdvancePayment.PaidAmount);
+            Assert.AreEqual(new DateTime(2025, 6, 7), loadedAdvancePayment.FormattedReceivedDateTime);
+            Assert.HasCount(1, loadedAdvancePayment.IncludedTradeTaxes);
+            Assert.AreEqual(1900m, loadedAdvancePayment.IncludedTradeTaxes[0].TaxAmount);
+            Assert.AreEqual(TaxTypes.VAT, loadedAdvancePayment.IncludedTradeTaxes[0].TypeCode);
+            Assert.AreEqual(TaxCategoryCodes.S, loadedAdvancePayment.IncludedTradeTaxes[0].CategoryCode);
+            Assert.AreEqual(19m, loadedAdvancePayment.IncludedTradeTaxes[0].Percent);
+            Assert.IsNotNull(loadedAdvancePayment.InvoiceSpecifiedReferencedDocument);
+            Assert.AreEqual("R202506-01", loadedAdvancePayment.InvoiceSpecifiedReferencedDocument.ID);
+            Assert.AreEqual(InvoiceType.PartialInvoice, loadedAdvancePayment.InvoiceSpecifiedReferencedDocument.TypeCode);
+            Assert.AreEqual(new DateTime(2025, 6, 1), loadedAdvancePayment.InvoiceSpecifiedReferencedDocument.IssueDateTime);
+        } // !TestAdvancePayment()
+
+
+        [TestMethod]
+        public void TestAdvancePaymentRequiresIncludedTradeTax()
+        {
+            InvoiceDescriptor desc = this._InvoiceProvider.CreateInvoice();
+            desc.AddAdvancePayment(2975m, new DateTime(2025, 6, 7));
+
+            using MemoryStream stream = new MemoryStream();
+            MissingDataException exception = Assert.ThrowsExactly<MissingDataException>(
+                () => desc.Save(stream, FacturXVersion.Version23, Profile.Extended));
+
+            StringAssert.Contains(exception.Message, "included trade tax");
+        } // !TestAdvancePaymentRequiresIncludedTradeTax()
+
+
+        [TestMethod]
+        public void TestAdvancePaymentReaderRejectsMissingMandatoryData()
+        {
+            InvoiceDescriptor desc = this._InvoiceProvider.CreateInvoice();
+            AdvancePayment advancePayment = desc.AddAdvancePayment(2975m, new DateTime(2025, 6, 7));
+            advancePayment.AddIncludedTradeTax(new Tax
+            {
+                TaxAmount = 1900m,
+                TypeCode = TaxTypes.VAT,
+                CategoryCode = TaxCategoryCodes.S,
+                Percent = 19m
+            });
+            advancePayment.SetInvoiceReferencedDocument("R202506-01", new DateTime(2025, 6, 1));
+
+            using MemoryStream stream = new MemoryStream();
+            desc.Save(stream, FacturXVersion.Version23, Profile.Extended);
+            stream.Seek(0, SeekOrigin.Begin);
+
+            XmlDocument document = new XmlDocument();
+            document.Load(stream);
+            XmlNamespaceManager namespaceManager = new XmlNamespaceManager(document.NameTable);
+            namespaceManager.AddNamespace("ram", "urn:un:unece:uncefact:data:standard:ReusableAggregateBusinessInformationEntity:100");
+
+            XmlDocument missingTaxAmountDocument = (XmlDocument)document.CloneNode(true);
+            XmlNode? taxAmountNode = missingTaxAmountDocument.SelectSingleNode("//ram:SpecifiedAdvancePayment/ram:IncludedTradeTax/ram:CalculatedAmount", namespaceManager);
+            Assert.IsNotNull(taxAmountNode?.ParentNode);
+            taxAmountNode!.ParentNode!.RemoveChild(taxAmountNode);
+            MissingDataException taxException = Assert.ThrowsExactly<MissingDataException>(() => LoadInvoice(missingTaxAmountDocument));
+            StringAssert.Contains(taxException.Message, "tax amount");
+
+            XmlDocument missingReferenceIdDocument = (XmlDocument)document.CloneNode(true);
+            XmlNode? referenceIdNode = missingReferenceIdDocument.SelectSingleNode("//ram:SpecifiedAdvancePayment/ram:InvoiceSpecifiedReferencedDocument/ram:IssuerAssignedID", namespaceManager);
+            Assert.IsNotNull(referenceIdNode?.ParentNode);
+            referenceIdNode!.ParentNode!.RemoveChild(referenceIdNode);
+            MissingDataException referenceException = Assert.ThrowsExactly<MissingDataException>(() => LoadInvoice(missingReferenceIdDocument));
+            StringAssert.Contains(referenceException.Message, "reference ID");
+
+            static void LoadInvoice(XmlDocument invoiceDocument)
+            {
+                using MemoryStream invalidStream = new MemoryStream();
+                invoiceDocument.Save(invalidStream);
+                invalidStream.Seek(0, SeekOrigin.Begin);
+                InvoiceDescriptor.Load(invalidStream);
+            }
+        } // !TestAdvancePaymentReaderRejectsMissingMandatoryData()
+
+
+        [TestMethod]
+        public void TestAdvancePaymentIsNotWrittenOutsideExtendedProfile()
+        {
+            InvoiceDescriptor desc = this._InvoiceProvider.CreateInvoice();
+            AdvancePayment advancePayment = desc.AddAdvancePayment(2975m, new DateTime(2025, 6, 7));
+            advancePayment.AddIncludedTradeTax(new Tax
+            {
+                TaxAmount = 1900m,
+                TypeCode = TaxTypes.VAT,
+                CategoryCode = TaxCategoryCodes.S,
+                Percent = 19m
+            });
+
+            using MemoryStream stream = new MemoryStream();
+            desc.Save(stream, FacturXVersion.Version23, Profile.Comfort);
+            stream.Seek(0, SeekOrigin.Begin);
+
+            XmlDocument document = new XmlDocument();
+            document.Load(stream);
+            XmlNamespaceManager namespaceManager = new XmlNamespaceManager(document.NameTable);
+            namespaceManager.AddNamespace("ram", "urn:un:unece:uncefact:data:standard:ReusableAggregateBusinessInformationEntity:100");
+
+            Assert.IsNull(document.SelectSingleNode("//ram:SpecifiedAdvancePayment", namespaceManager));
+        } // !TestAdvancePaymentIsNotWrittenOutsideExtendedProfile()
 
 
         [TestMethod]
@@ -2856,6 +3133,27 @@ namespace FacturX.Test
             Assert.AreEqual("Class Code", loadedInvoice.TradeLineItems.First().GetDesignatedProductClassifications().First().ClassCode);
             Assert.AreEqual("Class Name", loadedInvoice.TradeLineItems.First().GetDesignatedProductClassifications().First().ClassName);
         } // !TestDesignatedProductClassificationWithFullClassification()
+
+
+        [TestMethod]
+        [DataRow(DesignatedProductClassificationClassCodes.AS)]
+        [DataRow(DesignatedProductClassificationClassCodes.IN)]
+        [DataRow(DesignatedProductClassificationClassCodes.IS)]
+        [DataRow(DesignatedProductClassificationClassCodes.TST)]
+        [DataRow(DesignatedProductClassificationClassCodes.VX)]
+        public void TestExpandedDesignatedProductClassificationCodes(DesignatedProductClassificationClassCodes classificationCode)
+        {
+            InvoiceDescriptor desc = this._InvoiceProvider.CreateInvoice();
+            desc.TradeLineItems.First().AddDesignatedProductClassification(classificationCode);
+
+            using MemoryStream ms = new();
+            desc.Save(ms, FacturXVersion.Version23, Profile.XRechnung);
+            ms.Seek(0, SeekOrigin.Begin);
+
+            InvoiceDescriptor loadedInvoice = InvoiceDescriptor.Load(ms);
+
+            Assert.AreEqual(classificationCode, loadedInvoice.TradeLineItems.First().GetDesignatedProductClassifications().First().ListID);
+        } // !TestExpandedDesignatedProductClassificationCodes()
 
 
         [TestMethod]

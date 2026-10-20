@@ -40,7 +40,7 @@ namespace FacturX
         OtherBonus,
 
         /// <summary>
-        /// Manufacturer�s consumer discount
+        /// Manufacturer’s consumer discount
         /// </summary>
         [EnumStringValue("60")]
         ManufacturersConsumerDiscount,

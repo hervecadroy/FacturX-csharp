@@ -31,6 +31,9 @@ namespace FacturX
 
         private readonly Profile ALL_PROFILES = Profile.Minimum | Profile.BasicWL | Profile.Basic | Profile.Comfort | Profile.Extended | Profile.XRechnung1 | Profile.XRechnung;
 
+        /// <summary>
+        /// Schreibt UBL; BR-53 und R054 koppeln BT-6 an die tatsächliche BT-111-Ausgabe.
+        /// </summary>
         public override void Save(InvoiceDescriptor descriptor, Stream stream, FacturXFormats format = FacturXFormats.UBL, InvoiceFormatOptions options = null)
         {
             if (!stream.CanWrite || !stream.CanSeek)
@@ -123,7 +126,14 @@ namespace FacturX
             _Writer.WriteElementString("cbc", "DocumentCurrencyCode", this._Descriptor.Currency.EnumToString());
 
             //   BT-6
-            if (this._Descriptor.TaxCurrency.HasValue)
+            // BR-53/R054: BT-6 nur zusammen mit der tatsächlich geschriebenen BT-111-Gruppe.
+            // R005 verlangt eine andere Währung; auch die Voraussetzungen für BT-110 gehören zur Bedingung.
+            bool writeAccountingCurrency = this._Descriptor.AnyApplicableTradeTaxes() &&
+                this._Descriptor.TaxTotalAmount.HasValue &&
+                this._Descriptor.TaxCurrency.HasValue &&
+                this._Descriptor.TaxCurrency.Value != this._Descriptor.Currency &&
+                this._Descriptor.TaxTotalAmountInAccountingCurrency.HasValue;
+            if (writeAccountingCurrency)
             {
                 _Writer.WriteElementString("cbc", "TaxCurrencyCode", this._Descriptor.TaxCurrency.Value.EnumToString());
             }
@@ -198,6 +208,14 @@ namespace FacturX
                 _Writer.WriteStartElement("cac", "DespatchDocumentReference");
                 _Writer.WriteOptionalElementString("cbc", "ID", this._Descriptor.DespatchAdviceReferencedDocument.ID);
                 _Writer.WriteEndElement(); // !DespatchDocumentReference
+            }
+
+            // ReceiptDocumentReference
+            if (this._Descriptor.ReceivingAdviceReferencedDocument != null)
+            {
+                _Writer.WriteStartElement("cac", "ReceiptDocumentReference", Profile.Comfort | Profile.Extended | Profile.XRechnung1 | Profile.XRechnung);
+                _Writer.WriteOptionalElementString("cbc", "ID", this._Descriptor.ReceivingAdviceReferencedDocument.ID);
+                _Writer.WriteEndElement(); // !ReceiptDocumentReference
             }
 
             // ContractDocumentReference
@@ -497,11 +515,14 @@ namespace FacturX
                         _Writer.WriteElementString("cbc", "Percent", _formatDecimal(tax.Percent));
                     }
 
-                    if (tax.ExemptionReasonCode.HasValue)
+                    if (_AllowsTaxExemptionReason(tax.CategoryCode))
                     {
-                        _Writer.WriteElementString("cbc", "TaxExemptionReasonCode", tax.ExemptionReasonCode.Value.EnumToString());
+                        if (tax.ExemptionReasonCode.HasValue)
+                        {
+                            _Writer.WriteElementString("cbc", "TaxExemptionReasonCode", tax.ExemptionReasonCode.Value.EnumToString());
+                        }
+                        _Writer.WriteOptionalElementString("cbc", "TaxExemptionReason", tax.ExemptionReason);
                     }
-                    _Writer.WriteOptionalElementString("cbc", "TaxExemptionReason", tax.ExemptionReason);
                     _Writer.WriteStartElement("cac", "TaxScheme");
                     _Writer.WriteElementString("cbc", "ID", tax.TypeCode.EnumToString());
                     _Writer.WriteEndElement(); // !TaxScheme
@@ -510,6 +531,18 @@ namespace FacturX
                     _Writer.WriteEndElement(); // !TaxSubtotal
                 }
 
+                _Writer.WriteEndElement(); // !TaxTotal
+            }
+
+            if (writeAccountingCurrency)
+            {
+                // BT-111 uses a separate TaxTotal group without TaxSubtotal elements.
+                // BR-CO-14: Der Buchungswährungsbetrag darf nicht gegen die BT-110-Aufschlüsselung geprüft werden.
+                _Writer.WriteStartElement("cac", "TaxTotal");
+                _Writer.WriteStartElement("cbc", "TaxAmount");
+                _Writer.WriteAttributeString("currencyID", this._Descriptor.TaxCurrency.Value.EnumToString());
+                _Writer.WriteValue(_formatDecimal(this._Descriptor.TaxTotalAmountInAccountingCurrency.Value));
+                _Writer.WriteEndElement(); // !TaxAmount
                 _Writer.WriteEndElement(); // !TaxTotal
             }
 
@@ -659,7 +692,23 @@ namespace FacturX
             _Writer.WriteEndElement(); // !InvoicedQuantity || CreditedQuantity
 
             _WriteComment(_Writer, options, InvoiceCommentConstants.SpecifiedTradeSettlementLineMonetarySummationComment);
-            _writeOptionalAmount(_Writer, "cbc", "LineExtensionAmount", tradeLineItem.LineTotalAmount, forceCurrency: true);
+            decimal lineTotalAmount = 0m;
+            if (tradeLineItem.LineTotalAmount.HasValue)
+            {
+                lineTotalAmount = tradeLineItem.LineTotalAmount.Value;
+            }
+            else
+            {
+                lineTotalAmount = tradeLineItem.NetUnitPrice * tradeLineItem.BilledQuantity;
+                if (tradeLineItem.NetQuantity.HasValue && (tradeLineItem.NetQuantity.Value != 0))
+                {
+                    lineTotalAmount /= tradeLineItem.NetQuantity.Value;
+                }
+            }
+            _Writer.WriteStartElement("cbc", "LineExtensionAmount");
+            _Writer.WriteAttributeString("currencyID", this._Descriptor.Currency.EnumToString());
+            _Writer.WriteValue(_formatDecimal(lineTotalAmount));
+            _Writer.WriteEndElement(); // cbc:LineExtensionAmount
 
             if (tradeLineItem.BillingPeriodStart.HasValue || tradeLineItem.BillingPeriodEnd.HasValue)
             {

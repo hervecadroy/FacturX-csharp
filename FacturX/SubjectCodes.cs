@@ -101,6 +101,12 @@ namespace FacturX
         AET,
 
         /// <summary>
+        /// Consignment routing
+        /// </summary>
+        /// Information on routing of the consignment.
+        AIN,
+
+        /// <summary>
         /// Processing Instructions
         /// </summary>
         BAR,
@@ -196,6 +202,12 @@ namespace FacturX
         ///
         /// Note contains information mutually defined by trading partners.
         /// </summary>
-        ZZZ
+        ZZZ,
+
+        /// <summary>
+        /// Other service information
+        /// OSI is a code from the UNTDID 4451 code list.
+        /// </summary>
+        OSI
     }
 }

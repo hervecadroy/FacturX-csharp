@@ -38,6 +38,7 @@ namespace FacturX
         /// </summary>
         /// <param name="stream"></param>
         /// <returns>The parsed ZUGFeRD invoice</returns>
+        /// <remarks>BT-110 wird bei fehlender Währungszuordnung nur aus einer strukturell eindeutigen Kopfgruppe gelesen (R053).</remarks>
         public override InvoiceDescriptor Load(Stream stream)
         {
             if (!stream.CanRead)
@@ -277,13 +278,15 @@ namespace FacturX
             retval.Payee = _nodeAsParty(doc.DocumentElement, "//cac:PayeeParty", nsmgr);
 
             retval.PaymentReference = XmlUtils.NodeAsString(doc.DocumentElement, "//cac:PaymentMeans/cbc:PaymentID", nsmgr);
-            retval.Currency = EnumExtensions.StringToEnum<CurrencyCodes>(XmlUtils.NodeAsString(doc.DocumentElement, "//cbc:DocumentCurrencyCode", nsmgr));
+            // Der öffentliche Enum-Standard AED ist kein Präsenznachweis für BT-5.
+            // Für die Summenzuordnung zählt nur eine tatsächlich gelesene Dokumentwährung.
+            CurrencyCodes? documentCurrency = EnumExtensions.StringToNullableEnum<CurrencyCodes>(
+                XmlUtils.NodeAsString(doc.DocumentElement, "/*/cbc:DocumentCurrencyCode", nsmgr));
+            retval.Currency = documentCurrency.GetValueOrDefault();
 
-            CurrencyCodes optionalTaxCurrency = EnumExtensions.StringToEnum<CurrencyCodes>(XmlUtils.NodeAsString(doc.DocumentElement, "//cbc:TaxCurrencyCode", nsmgr)); // BT-6
-            if (optionalTaxCurrency != default)
-            {
-                retval.TaxCurrency = optionalTaxCurrency;
-            }
+            // BT-6: AED ist ein gültiger Code, kein Ersatz für eine fehlende Angabe.
+            retval.TaxCurrency = EnumExtensions.StringToNullableEnum<CurrencyCodes>(
+                XmlUtils.NodeAsString(doc.DocumentElement, "/*/cbc:TaxCurrencyCode", nsmgr));
 
             // TODO: Multiple SpecifiedTradeSettlementPaymentMeans can exist for each account/institution (with different SEPA?)
             PaymentMeans tempPaymentMeans = new PaymentMeans()
@@ -348,6 +351,7 @@ namespace FacturX
                     retval._AddTradeCharge(XmlUtils.NodeAsDecimal(node, ".//cbc:BaseAmount", nsmgr, 0).Value,
                                            retval.Currency,
                                            XmlUtils.NodeAsDecimal(node, ".//cbc:Amount", nsmgr, 0).Value,
+                                           XmlUtils.NodeAsDecimal(node, ".//cbc:MultiplierFactorNumeric", nsmgr), // BT-101
                                            XmlUtils.NodeAsString(node, ".//cbc:AllowanceChargeReason", nsmgr),
                                            EnumExtensions.StringToNullableEnum<TaxTypes>(XmlUtils.NodeAsString(node, ".//cac:TaxCategory/cac:TaxScheme/cbc:ID", nsmgr)),
                                            EnumExtensions.StringToNullableEnum<TaxCategoryCodes>(XmlUtils.NodeAsString(node, ".//cac:TaxCategory/cbc:ID", nsmgr)),
@@ -359,6 +363,7 @@ namespace FacturX
                     retval._AddTradeAllowance(XmlUtils.NodeAsDecimal(node, ".//cbc:BaseAmount", nsmgr, 0).Value,
                                               retval.Currency,
                                               XmlUtils.NodeAsDecimal(node, ".//cbc:Amount", nsmgr, 0).Value,
+                                              XmlUtils.NodeAsDecimal(node, ".//cbc:MultiplierFactorNumeric", nsmgr), // BT-94
                                               XmlUtils.NodeAsString(node, ".//cbc:AllowanceChargeReason", nsmgr),
                                               EnumExtensions.StringToNullableEnum<TaxTypes>(XmlUtils.NodeAsString(node, ".//cac:TaxCategory/cac:TaxScheme/cbc:ID", nsmgr)),
                                               EnumExtensions.StringToNullableEnum<TaxCategoryCodes>(XmlUtils.NodeAsString(node, ".//cac:TaxCategory/cbc:ID", nsmgr)),
@@ -391,6 +396,12 @@ namespace FacturX
                 retval.SetDespatchAdviceReferencedDocument(despatchDocumentReferenceIdNode.InnerText);
             }
 
+            XmlNode receiptDocumentReferenceIdNode = baseNode.SelectSingleNode("./cac:ReceiptDocumentReference/cbc:ID", nsmgr);
+            if (receiptDocumentReferenceIdNode != null)
+            {
+                retval.SetReceivingAdviceReferencedDocument(receiptDocumentReferenceIdNode.InnerText);
+            }
+
             retval.AddTradePaymentTerms(
                 description: XmlUtils.NodeAsString(doc.DocumentElement, "//cac:PaymentTerms/cbc:Note", nsmgr),
                 dueDate: XmlUtils.NodeAsDateTime(doc.DocumentElement, "//cbc:DueDate", nsmgr)
@@ -400,7 +411,26 @@ namespace FacturX
             retval.ChargeTotalAmount = XmlUtils.NodeAsDecimal(doc.DocumentElement, "//cac:LegalMonetaryTotal/cbc:ChargeTotalAmount", nsmgr);
             retval.AllowanceTotalAmount = XmlUtils.NodeAsDecimal(doc.DocumentElement, "//cac:LegalMonetaryTotal/cbc:AllowanceTotalAmount", nsmgr);
             retval.TaxBasisAmount = XmlUtils.NodeAsDecimal(doc.DocumentElement, "//cac:LegalMonetaryTotal/cbc:TaxExclusiveAmount", nsmgr);
-            retval.TaxTotalAmount = XmlUtils.NodeAsDecimal(doc.DocumentElement, "//cac:TaxTotal/cbc:TaxAmount", nsmgr);
+            if (documentCurrency.HasValue)
+            {
+                retval.TaxTotalAmount = XmlUtils.NodeAsDecimal(doc.DocumentElement,
+                    $"/*/cac:TaxTotal/cbc:TaxAmount[@currencyID='{documentCurrency.Value.EnumToString()}']", nsmgr);
+            }
+            if (!retval.TaxTotalAmount.HasValue)
+            {
+                // R053 kennzeichnet BT-110 durch die eine Kopfgruppe mit Steueraufschlüsselung.
+                // Nur eindeutig zuordenbare Beträge tolerieren; nie das erste BT-111 oder Positionssteuern übernehmen.
+                XmlNodeList taxTotalAmounts = doc.DocumentElement.SelectNodes("/*/cac:TaxTotal[cac:TaxSubtotal]/cbc:TaxAmount", nsmgr);
+                if (taxTotalAmounts?.Count == 1)
+                {
+                    retval.TaxTotalAmount = XmlUtils.NodeAsDecimal(taxTotalAmounts[0], ".", nsmgr);
+                }
+            }
+            if (retval.TaxCurrency.HasValue && (!documentCurrency.HasValue || retval.TaxCurrency.Value != documentCurrency.Value))
+            {
+                retval.TaxTotalAmountInAccountingCurrency = XmlUtils.NodeAsDecimal(doc.DocumentElement,
+                    $"/*/cac:TaxTotal/cbc:TaxAmount[@currencyID='{retval.TaxCurrency.Value.EnumToString()}']", nsmgr);
+            }
             retval.GrandTotalAmount = XmlUtils.NodeAsDecimal(doc.DocumentElement, "//cac:LegalMonetaryTotal/cbc:TaxInclusiveAmount", nsmgr);
             retval.RoundingAmount = XmlUtils.NodeAsDecimal(doc.DocumentElement, "//cac:LegalMonetaryTotal/cbc:PayableRoundingAmount", nsmgr);
             retval.TotalPrepaidAmount = XmlUtils.NodeAsDecimal(doc.DocumentElement, "//cac:LegalMonetaryTotal/cbc:PrepaidAmount", nsmgr);
@@ -525,6 +555,16 @@ namespace FacturX
                 ? EnumExtensions.StringToNullableEnum<QuantityCodes>(XmlUtils.NodeAsString(tradeLineItem, ".//cbc:InvoicedQuantity/@unitCode", nsmgr))
                 : EnumExtensions.StringToNullableEnum<QuantityCodes>(XmlUtils.NodeAsString(tradeLineItem, ".//cbc:CreditedQuantity/@unitCode", nsmgr));
 
+            decimal netUnitPrice = XmlUtils.NodeAsDecimal(tradeLineItem, ".//cac:Price/cbc:PriceAmount", nsmgr, 0).Value; // BT-146
+            XmlNode priceAllowanceChargeNode = tradeLineItem.SelectSingleNode("./cac:Price/cac:AllowanceCharge", nsmgr);
+            decimal? priceBasisAmount = XmlUtils.NodeAsDecimal(priceAllowanceChargeNode, "./cbc:BaseAmount", nsmgr); // BT-148
+            decimal? grossUnitPrice = priceBasisAmount;
+            if ((grossUnitPrice == null) && (priceAllowanceChargeNode != null))
+            {
+                // BT-148 is optional, but the gross price is the net price plus the price discount (BT-147)
+                grossUnitPrice = netUnitPrice + XmlUtils.NodeAsDecimal(priceAllowanceChargeNode, "./cbc:Amount", nsmgr, 0).Value;
+            }
+
             TradeLineItem item = new TradeLineItem(lineId)
             {
                 GlobalID = new GlobalID(EnumExtensions.StringToNullableEnum<GlobalIDSchemeIdentifiers>(XmlUtils.NodeAsString(tradeLineItem, "./cac:Item/cac:StandardItemIdentification/cbc:ID/@schemeID", nsmgr)),
@@ -539,8 +579,8 @@ namespace FacturX
                 TaxCategoryCode = EnumExtensions.StringToEnum<TaxCategoryCodes>(XmlUtils.NodeAsString(tradeLineItem, ".//cac:Item/cac:ClassifiedTaxCategory/cbc:ID", nsmgr)),
                 TaxType = EnumExtensions.StringToEnum<TaxTypes>(XmlUtils.NodeAsString(tradeLineItem, ".//cac:Item/cac:ClassifiedTaxCategory/cac:TaxScheme/cbc:ID", nsmgr)),
                 TaxPercent = XmlUtils.NodeAsDecimal(tradeLineItem, ".//cac:Item/cac:ClassifiedTaxCategory/cbc:Percent", nsmgr, 0).Value,
-                NetUnitPrice = XmlUtils.NodeAsDecimal(tradeLineItem, ".//cac:Price/cbc:PriceAmount", nsmgr, 0).Value,
-                GrossUnitPrice = 0, // TODO: Find value //GrossUnitPrice = XmlUtils.NodeAsDecimal(tradeLineItem, ".//ram:GrossPriceProductTradePrice/ram:ChargeAmount", nsmgr, 0).Value,
+                NetUnitPrice = netUnitPrice,
+                GrossUnitPrice = grossUnitPrice,
                 UnitCode = unitCode,
                 BillingPeriodStart = XmlUtils.NodeAsDateTime(tradeLineItem, ".//cac:InvoicePeriod/cbc:StartDate", nsmgr),
                 BillingPeriodEnd = XmlUtils.NodeAsDateTime(tradeLineItem, ".//cac:InvoicePeriod/cbc:EndDate", nsmgr),
@@ -664,29 +704,60 @@ namespace FacturX
                 ));
             }
 
-            XmlNodeList appliedTradeAllowanceChargeNodes = tradeLineItem.SelectNodes(".//cac:AllowanceCharge", nsmgr);
-            foreach (XmlNode appliedTradeAllowanceChargeNode in appliedTradeAllowanceChargeNodes)
+            // BG-27 / BG-28, allowances and charges of the invoice line itself.
+            // Only direct children, the allowance of the price (BT-147) is a different concept.
+            XmlNodeList specifiedTradeAllowanceChargeNodes = tradeLineItem.SelectNodes("./cac:AllowanceCharge", nsmgr);
+            foreach (XmlNode specifiedTradeAllowanceChargeNode in specifiedTradeAllowanceChargeNodes)
             {
-                bool chargeIndicator = XmlUtils.NodeAsBool(appliedTradeAllowanceChargeNode, "./cbc:ChargeIndicator", nsmgr);
-                decimal basisAmount = XmlUtils.NodeAsDecimal(appliedTradeAllowanceChargeNode, "./cbc:BaseAmount", nsmgr, 0).Value;
-                string basisAmountCurrency = XmlUtils.NodeAsString(appliedTradeAllowanceChargeNode, "./cbc:BaseAmount/@currencyID", nsmgr);
-                decimal actualAmount = XmlUtils.NodeAsDecimal(appliedTradeAllowanceChargeNode, "./cbc:Amount", nsmgr, 0).Value;
-                string actualAmountCurrency = XmlUtils.NodeAsString(appliedTradeAllowanceChargeNode, "./cbc:Amount/@currencyID", nsmgr);
-                string reason = XmlUtils.NodeAsString(appliedTradeAllowanceChargeNode, "./cbc:AllowanceChargeReason", nsmgr);
-                string reasonCode = XmlUtils.NodeAsString(appliedTradeAllowanceChargeNode, "./cbc:AllowanceChargeReasonCode", nsmgr);
+                bool chargeIndicator = XmlUtils.NodeAsBool(specifiedTradeAllowanceChargeNode, "./cbc:ChargeIndicator", nsmgr);
+                decimal basisAmount = XmlUtils.NodeAsDecimal(specifiedTradeAllowanceChargeNode, "./cbc:BaseAmount", nsmgr, 0).Value; // BT-137 / BT-142
+                string basisAmountCurrency = XmlUtils.NodeAsString(specifiedTradeAllowanceChargeNode, "./cbc:BaseAmount/@currencyID", nsmgr);
+                decimal actualAmount = XmlUtils.NodeAsDecimal(specifiedTradeAllowanceChargeNode, "./cbc:Amount", nsmgr, 0).Value; // BT-136 / BT-141
+                decimal? chargePercentage = XmlUtils.NodeAsDecimal(specifiedTradeAllowanceChargeNode, "./cbc:MultiplierFactorNumeric", nsmgr); // BT-138 / BT-143
+                string reason = XmlUtils.NodeAsString(specifiedTradeAllowanceChargeNode, "./cbc:AllowanceChargeReason", nsmgr);
+                string reasonCode = XmlUtils.NodeAsString(specifiedTradeAllowanceChargeNode, "./cbc:AllowanceChargeReasonCode", nsmgr);
 
                 if (chargeIndicator) // charge
                 {
-                    item.AddTradeCharge(EnumExtensions.StringToEnum<CurrencyCodes>(basisAmountCurrency),
-                                        basisAmount,
+                    item.AddSpecifiedTradeCharge(EnumExtensions.StringToEnum<CurrencyCodes>(basisAmountCurrency),
+                                                 basisAmount,
+                                                 actualAmount,
+                                                 chargePercentage,
+                                                 reason,
+                                                 EnumExtensions.StringToEnum<ChargeReasonCodes>(reasonCode));
+                }
+                else // allowance
+                {
+                    item.AddSpecifiedTradeAllowance(EnumExtensions.StringToEnum<CurrencyCodes>(basisAmountCurrency),
+                                                    basisAmount,
+                                                    actualAmount,
+                                                    chargePercentage,
+                                                    reason,
+                                                    EnumExtensions.StringToEnum<AllowanceReasonCodes>(reasonCode));
+                }
+            }
+
+            // BT-147 / BT-148, the discount of the item price. UBL allows one of them per line.
+            if (priceAllowanceChargeNode != null)
+            {
+                bool chargeIndicator = XmlUtils.NodeAsBool(priceAllowanceChargeNode, "./cbc:ChargeIndicator", nsmgr);
+                decimal actualAmount = XmlUtils.NodeAsDecimal(priceAllowanceChargeNode, "./cbc:Amount", nsmgr, 0).Value; // BT-147
+                string actualAmountCurrency = XmlUtils.NodeAsString(priceAllowanceChargeNode, "./cbc:Amount/@currencyID", nsmgr);
+                string reason = XmlUtils.NodeAsString(priceAllowanceChargeNode, "./cbc:AllowanceChargeReason", nsmgr);
+                string reasonCode = XmlUtils.NodeAsString(priceAllowanceChargeNode, "./cbc:AllowanceChargeReasonCode", nsmgr);
+
+                if (chargeIndicator) // charge
+                {
+                    item.AddTradeCharge(EnumExtensions.StringToEnum<CurrencyCodes>(actualAmountCurrency),
+                                        priceBasisAmount,
                                         actualAmount,
                                         reason,
                                         EnumExtensions.StringToEnum<ChargeReasonCodes>(reasonCode));
                 }
                 else // allowance
                 {
-                    item.AddTradeAllowance(EnumExtensions.StringToEnum<CurrencyCodes>(basisAmountCurrency),
-                                           basisAmount,
+                    item.AddTradeAllowance(EnumExtensions.StringToEnum<CurrencyCodes>(actualAmountCurrency),
+                                           priceBasisAmount,
                                            actualAmount,
                                            reason,
                                            EnumExtensions.StringToEnum<AllowanceReasonCodes>(reasonCode));
