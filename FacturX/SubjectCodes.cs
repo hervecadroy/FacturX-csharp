@@ -91,6 +91,11 @@ namespace FacturX
         ACB,
 
         /// <summary>
+        /// Information describing the type of the reason of transaction.
+        /// </summary>
+        ADN,
+
+        /// <summary>
         /// Text subject is note.
         /// </summary>
         ADU,
@@ -133,12 +138,12 @@ namespace FacturX
         /// </summary>
         /// The free text contains payment details.
         PMD,
-        
+
         /// <summary>
         /// Delivery information
         /// </summary>
         DEL,
-        
+
         /// <summary>
         /// Delivery instructions
         /// </summary>
