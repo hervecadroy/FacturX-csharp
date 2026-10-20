@@ -74,6 +74,13 @@ namespace FacturX
         public DespatchAdviceReferencedDocument DespatchAdviceReferencedDocument { get; internal set; } = null;
 
         /// <summary>
+        /// Detailed information about the corresponding receiving advice
+        ///
+        /// BT-15
+        /// </summary>
+        public ReceivingAdviceReferencedDocument ReceivingAdviceReferencedDocument { get; internal set; } = null;
+
+        /// <summary>
         /// Detailed information about the corresponding delivery note
         /// </summary>
         public DeliveryNoteReferencedDocument DeliveryNoteReferencedDocument { get; set; } = null;
@@ -194,7 +201,7 @@ namespace FacturX
         public Party SellerTaxRepresentative { get; set; }
 
         /// <summary>
-        /// List of tax registration numbers for the seller.
+        /// List of tax registration numbers for the seller tax representative.
         ///
         /// BT-63
         /// </summary>        
@@ -443,6 +450,13 @@ namespace FacturX
         /// BT-20
         /// </summary>
         public List<PaymentTerms> PaymentTerms { get; internal set; } = new List<PaymentTerms>();
+
+        /// <summary>
+        /// Detailangaben zu Vorauszahlungen im Extended-Profil.
+        ///
+        /// BG-X-45
+        /// </summary>
+        public List<AdvancePayment> AdvancePayments { get; internal set; } = new List<AdvancePayment>();
 
         /// <summary>
         /// A group of business terms providing information about a preceding invoices.
@@ -1024,6 +1038,20 @@ namespace FacturX
         } // !SetDespatchAdviceReferencedDocument()
 
         /// <summary>
+        /// Sets the receiving advice reference information
+        /// </summary>
+        /// <param name="receivingAdviceNo">Receiving advice number</param>
+        /// <param name="receivingAdviceDate">Receiving advice date</param>
+        public void SetReceivingAdviceReferencedDocument(string receivingAdviceNo, DateTime? receivingAdviceDate = null)
+        {
+            this.ReceivingAdviceReferencedDocument = new ReceivingAdviceReferencedDocument()
+            {
+                ID = receivingAdviceNo,
+                IssueDateTime = receivingAdviceDate
+            };
+        } // !SetReceivingAdviceReferencedDocument()
+
+        /// <summary>
         /// Sets the delivery note reference information
         /// </summary>
         /// <param name="deliveryNoteNo">Delivery note number</param>
@@ -1391,6 +1419,38 @@ namespace FacturX
         {
             return this._InvoiceReferencedDocuments;
         } // !GetInvoiceReferencedDocuments()
+
+
+        /// <summary>
+        /// Fügt Detailangaben zu einer Vorauszahlung hinzu.
+        ///
+        /// BG-X-45
+        /// </summary>
+        /// <param name="paidAmount">Gezahlter Vorauszahlungsbetrag</param>
+        /// <param name="receivedDateTime">Datum des Zahlungseingangs</param>
+        /// <returns>Hinzugefügte Vorauszahlung</returns>
+        public AdvancePayment AddAdvancePayment(decimal paidAmount, DateTime? receivedDateTime = null)
+        {
+            AdvancePayment advancePayment = new AdvancePayment
+            {
+                PaidAmount = paidAmount,
+                FormattedReceivedDateTime = receivedDateTime
+            };
+            AdvancePayments.Add(advancePayment);
+            return advancePayment;
+        } // !AddAdvancePayment()
+
+
+        /// <summary>
+        /// Liefert alle Detailangaben zu Vorauszahlungen.
+        ///
+        /// BG-X-45
+        /// </summary>
+        /// <returns>Liste der Vorauszahlungen</returns>
+        public List<AdvancePayment> GetAdvancePayments()
+        {
+            return AdvancePayments;
+        } // !GetAdvancePayments()
 
 
         /// <summary>

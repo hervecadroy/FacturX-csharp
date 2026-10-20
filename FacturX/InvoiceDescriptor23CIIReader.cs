@@ -235,6 +235,16 @@ namespace FacturX
                 };
             }
 
+            XmlNode receivingAdviceReferencedDocumentNode = doc.DocumentElement.SelectSingleNode("//ram:ApplicableHeaderTradeDelivery/ram:ReceivingAdviceReferencedDocument", nsmgr);
+            if (receivingAdviceReferencedDocumentNode != null)
+            {
+                retval.ReceivingAdviceReferencedDocument = new ReceivingAdviceReferencedDocument()
+                {
+                    ID = XmlUtils.NodeAsString(receivingAdviceReferencedDocumentNode, "ram:IssuerAssignedID", nsmgr),
+                    IssueDateTime = DataTypeReader.ReadFormattedIssueDateTime(receivingAdviceReferencedDocumentNode, "ram:FormattedIssueDateTime", nsmgr)
+                };
+            }
+
             string deliveryNoteID = XmlUtils.NodeAsString(doc.DocumentElement, "//ram:ApplicableHeaderTradeDelivery/ram:DeliveryNoteReferencedDocument/ram:IssuerAssignedID", nsmgr);
             DateTime? deliveryNoteDate = XmlUtils.NodeAsDateTime(doc.DocumentElement, "//ram:ApplicableHeaderTradeDelivery/ram:DeliveryNoteReferencedDocument/ram:FormattedIssueDateTime/udt:DateTimeString", nsmgr);
 
@@ -485,6 +495,64 @@ namespace FacturX
                 );
             }
 
+            // BG-X-45 ist eine eigenständige Aufschlüsselung und nicht mit BT-113 gleichzusetzen.
+            foreach (XmlNode node in doc.SelectNodes("//ram:ApplicableHeaderTradeSettlement/ram:SpecifiedAdvancePayment", nsmgr))
+            {
+                decimal? paidAmount = XmlUtils.NodeAsDecimal(node, "./ram:PaidAmount", nsmgr);
+                if (!paidAmount.HasValue)
+                {
+                    throw new MissingDataException("Advance payment paid amount is required (BG-X-45).");
+                }
+
+                AdvancePayment advancePayment = retval.AddAdvancePayment(
+                    paidAmount.Value,
+                    DataTypeReader.ReadFormattedIssueDateTime(node, "./ram:FormattedReceivedDateTime", nsmgr));
+
+                XmlNodeList includedTradeTaxNodes = node.SelectNodes("./ram:IncludedTradeTax", nsmgr);
+                if (includedTradeTaxNodes.Count == 0)
+                {
+                    throw new MissingDataException("At least one included trade tax is required for an advance payment (BG-X-45).");
+                }
+
+                foreach (XmlNode includedTradeTaxNode in includedTradeTaxNodes)
+                {
+                    TaxTypes? typeCode = EnumExtensions.StringToNullableEnum<TaxTypes>(XmlUtils.NodeAsString(includedTradeTaxNode, "./ram:TypeCode", nsmgr));
+                    TaxCategoryCodes? categoryCode = EnumExtensions.StringToNullableEnum<TaxCategoryCodes>(XmlUtils.NodeAsString(includedTradeTaxNode, "./ram:CategoryCode", nsmgr));
+                    decimal? taxAmount = XmlUtils.NodeAsDecimal(includedTradeTaxNode, "./ram:CalculatedAmount", nsmgr);
+                    if (!taxAmount.HasValue || !typeCode.HasValue || !categoryCode.HasValue)
+                    {
+                        throw new MissingDataException("Advance payment tax amount, type and category are required (BG-X-45).");
+                    }
+
+                    Tax includedTradeTax = new Tax
+                    {
+                        TaxAmount = taxAmount.Value,
+                        TypeCode = typeCode,
+                        CategoryCode = categoryCode
+                    };
+                    decimal? percent = XmlUtils.NodeAsDecimal(includedTradeTaxNode, "./ram:RateApplicablePercent", nsmgr);
+                    if (percent.HasValue)
+                    {
+                        includedTradeTax.Percent = percent.Value;
+                    }
+                    advancePayment.AddIncludedTradeTax(includedTradeTax);
+                }
+
+                XmlNode referencedDocumentNode = node.SelectSingleNode("./ram:InvoiceSpecifiedReferencedDocument", nsmgr);
+                if (referencedDocumentNode != null)
+                {
+                    string referencedDocumentId = XmlUtils.NodeAsString(referencedDocumentNode, "./ram:IssuerAssignedID", nsmgr);
+                    if (String.IsNullOrWhiteSpace(referencedDocumentId))
+                    {
+                        throw new MissingDataException("Advance payment invoice reference ID is required when a reference is specified (BG-X-45).");
+                    }
+                    advancePayment.SetInvoiceReferencedDocument(
+                        referencedDocumentId,
+                        DataTypeReader.ReadFormattedIssueDateTime(referencedDocumentNode, "./ram:FormattedIssueDateTime", nsmgr),
+                        EnumExtensions.StringToNullableEnum<InvoiceType>(XmlUtils.NodeAsString(referencedDocumentNode, "./ram:TypeCode", nsmgr)));
+                }
+            }
+
             retval.OrderDate = DataTypeReader.ReadFormattedIssueDateTime(doc.DocumentElement, "//ram:ApplicableHeaderTradeAgreement/ram:BuyerOrderReferencedDocument/ram:FormattedIssueDateTime", nsmgr);
             retval.OrderNo = XmlUtils.NodeAsString(doc.DocumentElement, "//ram:ApplicableHeaderTradeAgreement/ram:BuyerOrderReferencedDocument/ram:IssuerAssignedID", nsmgr);
 
@@ -558,7 +626,7 @@ namespace FacturX
 
             string lineId = XmlUtils.NodeAsString(tradeLineItem, ".//ram:AssociatedDocumentLineDocument/ram:LineID", nsmgr, String.Empty);
             string parentLineId = XmlUtils.NodeAsString(tradeLineItem, ".//ram:AssociatedDocumentLineDocument/ram:ParentLineID", nsmgr, null);
-            LineStatusCodes? lineStatusCode = EnumExtensions.StringToEnum<LineStatusCodes>(XmlUtils.NodeAsString(tradeLineItem, ".//ram:AssociatedDocumentLineDocument/ram:LineStatusCode", nsmgr, null));
+            LineStatusCodes? lineStatusCode = EnumExtensions.StringToNullableEnum<LineStatusCodes>(XmlUtils.NodeAsString(tradeLineItem, ".//ram:AssociatedDocumentLineDocument/ram:LineStatusCode", nsmgr, null));
             LineStatusReasonCodes? lineStatusReasonCode = EnumExtensions.StringToNullableEnum<LineStatusReasonCodes>(XmlUtils.NodeAsString(tradeLineItem, ".//ram:AssociatedDocumentLineDocument/ram:LineStatusReasonCode", nsmgr, null));
 
             TradeLineItem item = new TradeLineItem(lineId)
@@ -602,10 +670,7 @@ namespace FacturX
                 item.SetParentLineId(parentLineId);
             }
 
-            if (lineStatusCode.HasValue && lineStatusReasonCode.HasValue)
-            {
-                item.SetLineStatus(lineStatusCode.Value, lineStatusReasonCode.Value);
-            }
+            item.AssociatedDocument.SetLineStatus(lineStatusCode, lineStatusReasonCode);
 
             if (tradeLineItem.SelectNodes(".//ram:SpecifiedTradeProduct/ram:ApplicableProductCharacteristic", nsmgr) != null)
             {
@@ -706,7 +771,11 @@ namespace FacturX
                 }
 
                 XmlNode specifiedTradeSettlementLineMonetarySummationNode = tradeLineItem.SelectSingleNode(".//ram:SpecifiedLineTradeSettlement/ram:SpecifiedTradeSettlementLineMonetarySummation", nsmgr);
-                // TODO: process
+                if (specifiedTradeSettlementLineMonetarySummationNode != null)
+                {
+                    // Der Reader erhält vorhandene Daten unabhängig von der späteren Profilvalidierung.
+                    item.TotalAllowanceChargeAmount = XmlUtils.NodeAsDecimal(specifiedTradeSettlementLineMonetarySummationNode, "./ram:TotalAllowanceChargeAmount", nsmgr);
+                }
 
                 foreach (XmlNode invoiceReferencedDocumentNode in tradeLineItem.SelectNodes(".//ram:SpecifiedLineTradeSettlement/ram:InvoiceReferencedDocument", nsmgr))
                 {

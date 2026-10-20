@@ -57,6 +57,7 @@ namespace FacturX
         /// <param name="stream">The target stream for saving the invoice</param>
         /// <param name="format">Format of the target file</param>
         /// <param name="options">Optional `InvoiceFormatOptions` for custom formatting of invoice file</param>
+        /// <remarks>BR-53: BT-6 und BT-111 verwenden dieselbe Ausgabebedingung.</remarks>
         public override void Save(InvoiceDescriptor descriptor, Stream stream, FacturXFormats format = FacturXFormats.CII, InvoiceFormatOptions options = null)
         {
             if (!stream.CanWrite || !stream.CanSeek)
@@ -602,6 +603,24 @@ namespace FacturX
                 _Writer.WriteEndElement(); // !ActualDeliverySupplyChainEvent
             }
 
+            if (this._Descriptor.ReceivingAdviceReferencedDocument != null)
+            {
+                _Writer.WriteStartElement("ram", "ReceivingAdviceReferencedDocument", PROFILE_COMFORT_EXTENDED_XRECHNUNG);
+                _Writer.WriteElementString("ram", "IssuerAssignedID", this._Descriptor.ReceivingAdviceReferencedDocument.ID);
+
+                if (this._Descriptor.ReceivingAdviceReferencedDocument.IssueDateTime.HasValue)
+                {
+                    _Writer.WriteStartElement("ram", "FormattedIssueDateTime", Profile.Extended);
+                    _Writer.WriteStartElement("qdt", "DateTimeString");
+                    _Writer.WriteAttributeString("format", "102");
+                    _Writer.WriteValue(_formatDate(this._Descriptor.ReceivingAdviceReferencedDocument.IssueDateTime.Value));
+                    _Writer.WriteEndElement(); // !qdt:DateTimeString
+                    _Writer.WriteEndElement(); // !ram:FormattedIssueDateTime
+                }
+
+                _Writer.WriteEndElement(); // !ReceivingAdviceReferencedDocument
+            }
+
             if (this._Descriptor.DeliveryNoteReferencedDocument != null)
             {
                 _Writer.WriteStartElement("ram", "DeliveryNoteReferencedDocument");
@@ -653,7 +672,12 @@ namespace FacturX
 
             //   3. TaxCurrencyCode (optional)
             //   BT-6
-            if (this._Descriptor.TaxCurrency.HasValue)
+            // BR-53 verlangt BT-111 zu BT-6; R005 verlangt eine von BT-5 abweichende Währung.
+            // Die gemeinsame Bedingung verhindert BT-6 ohne tatsächlich ausgegebenen Betrag.
+            bool writeAccountingCurrency = this._Descriptor.TaxCurrency.HasValue &&
+                this._Descriptor.TaxCurrency.Value != this._Descriptor.Currency &&
+                this._Descriptor.TaxTotalAmountInAccountingCurrency.HasValue;
+            if (writeAccountingCurrency)
             {
                 _Writer.WriteElementString("ram", "TaxCurrencyCode", this._Descriptor.TaxCurrency.Value.EnumToString(), profile: Profile.Comfort | Profile.Extended | Profile.XRechnung1 | Profile.XRechnung);
             }
@@ -975,10 +999,8 @@ namespace FacturX
             _writeOptionalAmount(_Writer, "ram", "TaxBasisTotalAmount", this._Descriptor.TaxBasisAmount);
             _writeOptionalAmount(_Writer, "ram", "TaxTotalAmount", this._Descriptor.TaxTotalAmount, forceCurrency: true);
 
-            // BT-111: TaxTotalAmount in accounting currency — only when BT-6 (TaxCurrency) differs from BT-5 (Currency)
-            if (this._Descriptor.TaxCurrency.HasValue &&
-                this._Descriptor.TaxCurrency.Value != this._Descriptor.Currency &&
-                this._Descriptor.TaxTotalAmountInAccountingCurrency.HasValue)
+            // BT-111: Steuerbetrag in der von BT-5 abweichenden Buchungswährung BT-6.
+            if (writeAccountingCurrency)
             {
                 _Writer.WriteStartElement("ram", "TaxTotalAmount");
                 _Writer.WriteAttributeString("currencyID", this._Descriptor.TaxCurrency.Value.EnumToString());
@@ -1155,7 +1177,12 @@ namespace FacturX
                 writer.WriteEndElement(); // !CalculatedAmount
 
                 writer.WriteElementString("ram", "TypeCode", tax.TypeCode.EnumToString());
-                _Writer.WriteOptionalElementString("ram", "ExemptionReason", tax.ExemptionReason);
+
+                if (_AllowsTaxExemptionReason(tax.CategoryCode))
+                {
+                    writer.WriteOptionalElementString("ram", "ExemptionReason", tax.ExemptionReason);
+                }
+
                 writer.WriteStartElement("ram", "BasisAmount");
                 writer.WriteValue(_formatDecimal(tax.BasisAmount));
                 writer.WriteEndElement(); // !BasisAmount
@@ -1178,7 +1205,7 @@ namespace FacturX
                     writer.WriteElementString("ram", "CategoryCode", tax.CategoryCode.EnumToString());
                 }
 
-                if (tax.ExemptionReasonCode.HasValue)
+                if (tax.ExemptionReasonCode.HasValue && _AllowsTaxExemptionReason(tax.CategoryCode))
                 {
                     writer.WriteElementString("ram", "ExemptionReasonCode", tax.ExemptionReasonCode?.EnumToString());
                 }

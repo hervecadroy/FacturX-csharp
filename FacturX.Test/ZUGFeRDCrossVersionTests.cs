@@ -43,6 +43,60 @@ namespace FacturX.Test
 
 
         [TestMethod]
+        [DataRow(FacturXVersion.Version20)]
+        [DataRow(FacturXVersion.Version23)]
+        public void TestLineStatusReasonCodeWithoutStatusCode(FacturXVersion version)
+        {
+            InvoiceDescriptor desc = this._InvoiceProvider.CreateInvoice();
+            desc.TradeLineItems[0].SetLineStatus(LineStatusCodes.New, LineStatusReasonCodes.GROUP);
+
+            using MemoryStream invoiceStream = new();
+            desc.Save(invoiceStream, version, Profile.Extended);
+            string invoiceXml = Encoding.UTF8.GetString(invoiceStream.ToArray());
+
+            XmlDocument reasonOnlyDocument = new();
+            reasonOnlyDocument.LoadXml(invoiceXml);
+            XmlNamespaceManager reasonOnlyNamespaceManager = new(reasonOnlyDocument.NameTable);
+            reasonOnlyNamespaceManager.AddNamespace("ram", "urn:un:unece:uncefact:data:standard:ReusableAggregateBusinessInformationEntity:100");
+            XmlNode? lineStatusCodeNode = reasonOnlyDocument.SelectSingleNode("//ram:AssociatedDocumentLineDocument/ram:LineStatusCode", reasonOnlyNamespaceManager);
+            Assert.IsNotNull(lineStatusCodeNode);
+            lineStatusCodeNode.ParentNode!.RemoveChild(lineStatusCodeNode);
+
+            using MemoryStream reasonOnlyStream = new(Encoding.UTF8.GetBytes(reasonOnlyDocument.OuterXml));
+            InvoiceDescriptor reasonOnlyInvoice = InvoiceDescriptor.Load(reasonOnlyStream);
+            Assert.IsNull(reasonOnlyInvoice.TradeLineItems[0].AssociatedDocument.LineStatusCode);
+            Assert.AreEqual(LineStatusReasonCodes.GROUP, reasonOnlyInvoice.TradeLineItems[0].AssociatedDocument.LineStatusReasonCode);
+        } // !TestLineStatusReasonCodeWithoutStatusCode()
+
+
+        [TestMethod]
+        [DataRow(FacturXVersion.Version20)]
+        [DataRow(FacturXVersion.Version23)]
+        public void TestLineStatusCodeWithoutReasonCode(FacturXVersion version)
+        {
+            InvoiceDescriptor desc = this._InvoiceProvider.CreateInvoice();
+            desc.TradeLineItems[0].SetLineStatus(LineStatusCodes.New, LineStatusReasonCodes.GROUP);
+
+            using MemoryStream invoiceStream = new();
+            desc.Save(invoiceStream, version, Profile.Extended);
+            string invoiceXml = Encoding.UTF8.GetString(invoiceStream.ToArray());
+
+            XmlDocument statusOnlyDocument = new();
+            statusOnlyDocument.LoadXml(invoiceXml);
+            XmlNamespaceManager statusOnlyNamespaceManager = new(statusOnlyDocument.NameTable);
+            statusOnlyNamespaceManager.AddNamespace("ram", "urn:un:unece:uncefact:data:standard:ReusableAggregateBusinessInformationEntity:100");
+            XmlNode? lineStatusReasonCodeNode = statusOnlyDocument.SelectSingleNode("//ram:AssociatedDocumentLineDocument/ram:LineStatusReasonCode", statusOnlyNamespaceManager);
+            Assert.IsNotNull(lineStatusReasonCodeNode);
+            lineStatusReasonCodeNode.ParentNode!.RemoveChild(lineStatusReasonCodeNode);
+
+            using MemoryStream statusOnlyStream = new(Encoding.UTF8.GetBytes(statusOnlyDocument.OuterXml));
+            InvoiceDescriptor statusOnlyInvoice = InvoiceDescriptor.Load(statusOnlyStream);
+            Assert.AreEqual(LineStatusCodes.New, statusOnlyInvoice.TradeLineItems[0].AssociatedDocument.LineStatusCode);
+            Assert.IsNull(statusOnlyInvoice.TradeLineItems[0].AssociatedDocument.LineStatusReasonCode);
+        } // !TestLineStatusCodeWithoutReasonCode()
+
+
+        [TestMethod]
         [DataRow(FacturXVersion.Version1, Profile.Extended)]
         [DataRow(FacturXVersion.Version20, Profile.Extended)]
         [DataRow(FacturXVersion.Version23, Profile.Extended)]
@@ -87,6 +141,7 @@ namespace FacturX.Test
             desc.AddNote("REG", SubjectCodes.REG);
             desc.AddNote("SUR", SubjectCodes.SUR);
             desc.AddNote("TXD", SubjectCodes.TXD);
+            desc.AddNote("OSI", SubjectCodes.OSI);
 
             using MemoryStream ms = new();
             desc.Save(ms, version, profile);
@@ -101,6 +156,7 @@ namespace FacturX.Test
             Assert.AreEqual(notes[3].SubjectCode, SubjectCodes.REG);
             Assert.AreEqual(notes[4].SubjectCode, SubjectCodes.SUR);
             Assert.AreEqual(notes[5].SubjectCode, SubjectCodes.TXD);
+            Assert.AreEqual(notes[6].SubjectCode, SubjectCodes.OSI);
         } // !TestNoteSubjectCodes()
 
 
@@ -287,6 +343,60 @@ namespace FacturX.Test
             Assert.AreEqual(-5m, actualTax.AllowanceChargeBasisAmount);
             Assert.AreEqual(198m, actualTax.LineTotalBasisAmount);
         } // !SavingThenReadingAppliedTradeTaxes()
+
+
+        [TestMethod]
+        [DataRow(FacturXVersion.Version20, FacturXFormats.CII, Profile.Extended)]
+        [DataRow(FacturXVersion.Version23, FacturXFormats.CII, Profile.Extended)]
+        [DataRow(FacturXVersion.Version23, FacturXFormats.CII, Profile.XRechnung)]
+        [DataRow(FacturXVersion.Version23, FacturXFormats.UBL, Profile.XRechnung)]
+        public void TestVATBreakdownExemptionReasons(FacturXVersion version, FacturXFormats format, Profile profile)
+        {
+            // BR-S-10, BR-Z-10, BR-AF-10 (L) and BR-AG-10 (M) forbid BT-120/BT-121, BR-E-10 requires them
+            Dictionary<TaxCategoryCodes, bool> reasonAllowedByCategory = new()
+            {
+                { TaxCategoryCodes.S, false },
+                { TaxCategoryCodes.Z, false },
+                { TaxCategoryCodes.L, false },
+                { TaxCategoryCodes.M, false },
+                { TaxCategoryCodes.E, true }
+            };
+
+            InvoiceDescriptor descriptor = this._InvoiceProvider.CreateInvoice();
+            descriptor.Taxes.Clear();
+            foreach (TaxCategoryCodes categoryCode in reasonAllowedByCategory.Keys)
+            {
+                descriptor.AddApplicableTradeTax(100m, 0m, 0m, TaxTypes.VAT, categoryCode,
+                    exemptionReasonCode: TaxExemptionReasonCodes.VATEX_EU_132, exemptionReason: $"Reason {categoryCode}");
+            }
+
+            MemoryStream stream = new MemoryStream();
+            descriptor.Save(stream, version, profile, format);
+            stream.Seek(0, SeekOrigin.Begin);
+
+            // check the written xml directly, so the result does not depend on how the readers map missing elements
+            XDocument document = XDocument.Load(stream);
+            bool isUBL = format == FacturXFormats.UBL;
+            string breakdownName = isUBL ? "TaxCategory" : "ApplicableTradeTax";
+            string breakdownParentName = isUBL ? "TaxSubtotal" : "ApplicableHeaderTradeSettlement";
+            string categoryName = isUBL ? "ID" : "CategoryCode";
+            string reasonName = isUBL ? "TaxExemptionReason" : "ExemptionReason";
+            string reasonCodeName = isUBL ? "TaxExemptionReasonCode" : "ExemptionReasonCode";
+
+            static string childValue(XElement parent, string localName) => parent.Elements().SingleOrDefault(e => e.Name.LocalName == localName)?.Value;
+
+            List<XElement> breakdowns = document.Descendants()
+                .Where(e => (e.Name.LocalName == breakdownName) && (e.Parent?.Name.LocalName == breakdownParentName))
+                .ToList();
+            Assert.HasCount(reasonAllowedByCategory.Count, breakdowns);
+
+            foreach (KeyValuePair<TaxCategoryCodes, bool> entry in reasonAllowedByCategory)
+            {
+                XElement breakdown = breakdowns.Single(b => childValue(b, categoryName) == entry.Key.ToString());
+                Assert.AreEqual(entry.Value ? $"Reason {entry.Key}" : null, childValue(breakdown, reasonName), $"BT-120 for category {entry.Key}");
+                Assert.AreEqual(entry.Value ? "VATEX-EU-132" : null, childValue(breakdown, reasonCodeName), $"BT-121 for category {entry.Key}");
+            }
+        } // !TestVATBreakdownExemptionReasons()
 
 
         [TestMethod]
@@ -1310,6 +1420,8 @@ namespace FacturX.Test
 
             XmlNodeList taxTotalNodes = xmlDoc.SelectNodes("//ram:SpecifiedTradeSettlementHeaderMonetarySummation/ram:TaxTotalAmount", nsmgr);
             Assert.AreEqual(2, taxTotalNodes.Count, "Two TaxTotalAmount elements expected when TaxCurrency differs from Currency");
+            Assert.AreEqual(1, xmlDoc.SelectNodes("//ram:TaxCurrencyCode", nsmgr).Count,
+                "BT-6 must be written when accounting currency differs from invoice currency");
 
             // BT-110 must use invoice currency (BT-5)
             var bt110Node = xmlDoc.SelectSingleNode("//ram:SpecifiedTradeSettlementHeaderMonetarySummation/ram:TaxTotalAmount[@currencyID='EUR']", nsmgr);
@@ -1356,7 +1468,219 @@ namespace FacturX.Test
 
             XmlNodeList taxTotalNodes = xmlDoc.SelectNodes("//ram:SpecifiedTradeSettlementHeaderMonetarySummation/ram:TaxTotalAmount", nsmgr);
             Assert.AreEqual(1, taxTotalNodes.Count, "Only BT-110 expected when TaxCurrency equals Currency");
+            Assert.AreEqual(0, xmlDoc.SelectNodes("//ram:TaxCurrencyCode", nsmgr).Count,
+                "BR-53 forbids BT-6 when no BT-111 is written");
         } // !TestTaxTotalAmountBT110OnlyWhenTaxCurrencyEqualsCurrency()
+
+
+        [TestMethod]
+        public void TestTaxTotalAmountBT110AndBT111DualCurrencyUBL()
+        {
+            InvoiceDescriptor desc = _InvoiceProvider.CreateInvoice();
+            desc.SetTaxTotalInAccountingCurrency(62.50m, CurrencyCodes.CHF);
+
+            using MemoryStream invoiceStream = new();
+            desc.Save(invoiceStream, FacturXVersion.Version23, Profile.XRechnung, FacturXFormats.UBL);
+
+            XmlDocument xmlDocument = new();
+            xmlDocument.LoadXml(Encoding.UTF8.GetString(invoiceStream.ToArray()));
+            XmlNamespaceManager namespaceManager = new(xmlDocument.NameTable);
+            namespaceManager.AddNamespace("cac", "urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2");
+            namespaceManager.AddNamespace("cbc", "urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2");
+
+            XmlNodeList? taxTotalNodes = xmlDocument.SelectNodes("/*/cac:TaxTotal", namespaceManager);
+            Assert.IsNotNull(taxTotalNodes);
+            Assert.AreEqual(2, taxTotalNodes.Count, "Two TaxTotal groups expected for BT-110 and BT-111");
+            Assert.AreEqual(1, xmlDocument.SelectNodes("/*/cbc:TaxCurrencyCode", namespaceManager)!.Count,
+                "BT-6 must be written when accounting currency differs from invoice currency");
+
+            XmlNode? bt110Node = xmlDocument.SelectSingleNode("/*/cac:TaxTotal[cbc:TaxAmount/@currencyID='EUR']", namespaceManager);
+            Assert.IsNotNull(bt110Node, "BT-110 TaxTotal in invoice currency must be present");
+            Assert.IsGreaterThan(0, bt110Node.SelectNodes("cac:TaxSubtotal", namespaceManager)!.Count, "BT-110 TaxTotal must contain the VAT breakdown");
+
+            XmlNode? bt111Node = xmlDocument.SelectSingleNode("/*/cac:TaxTotal[cbc:TaxAmount/@currencyID='CHF']", namespaceManager);
+            Assert.IsNotNull(bt111Node, "BT-111 TaxTotal in accounting currency must be present");
+            Assert.AreEqual(0, bt111Node.SelectNodes("cac:TaxSubtotal", namespaceManager)!.Count, "BT-111 TaxTotal must not contain a VAT breakdown");
+
+            // The currency attributes, not the order of the TaxTotal groups, determine BT-110 and BT-111.
+            XmlNode documentElement = xmlDocument.DocumentElement!;
+            documentElement.InsertBefore(taxTotalNodes[1]!, taxTotalNodes[0]);
+
+            using MemoryStream reorderedStream = new(Encoding.UTF8.GetBytes(xmlDocument.OuterXml));
+            InvoiceDescriptor loadedInvoice = InvoiceDescriptor.Load(reorderedStream);
+            Assert.AreEqual(56.87m, loadedInvoice.TaxTotalAmount, "BT-110 must be selected by invoice currency");
+            Assert.AreEqual(62.50m, loadedInvoice.TaxTotalAmountInAccountingCurrency, "BT-111 must be selected by accounting currency");
+        } // !TestTaxTotalAmountBT110AndBT111DualCurrencyUBL()
+
+
+        [TestMethod]
+        public void TestTaxTotalAmountBT110OnlyWhenTaxCurrencyEqualsCurrencyUBL()
+        {
+            InvoiceDescriptor desc = _InvoiceProvider.CreateInvoice();
+            desc.SetTaxTotalInAccountingCurrency(56.87m, CurrencyCodes.EUR);
+
+            using MemoryStream invoiceStream = new();
+            desc.Save(invoiceStream, FacturXVersion.Version23, Profile.XRechnung, FacturXFormats.UBL);
+
+            XmlDocument xmlDocument = new();
+            xmlDocument.LoadXml(Encoding.UTF8.GetString(invoiceStream.ToArray()));
+            XmlNamespaceManager namespaceManager = new(xmlDocument.NameTable);
+            namespaceManager.AddNamespace("cac", "urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2");
+            namespaceManager.AddNamespace("cbc", "urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2");
+
+            Assert.AreEqual(1, xmlDocument.SelectNodes("/*/cac:TaxTotal", namespaceManager)!.Count,
+                "Only BT-110 expected when accounting currency equals invoice currency");
+            Assert.AreEqual(0, xmlDocument.SelectNodes("/*/cbc:TaxCurrencyCode", namespaceManager)!.Count,
+                "BR-53 forbids BT-6 when no BT-111 is written");
+        } // !TestTaxTotalAmountBT110OnlyWhenTaxCurrencyEqualsCurrencyUBL()
+
+
+        /// <summary>
+        /// BR-53 und R054 koppeln BT-6 an die tatsächliche BT-111-Ausgabe.
+        /// Ein vorhandener Nullbetrag zählt dabei als Betrag, nicht als fehlende Angabe.
+        /// </summary>
+        [TestMethod]
+        [DataRow(FacturXVersion.Version20, FacturXFormats.CII, "MissingAmount")]
+        [DataRow(FacturXVersion.Version20, FacturXFormats.CII, "ZeroAmount")]
+        [DataRow(FacturXVersion.Version20, FacturXFormats.CII, "Valid")]
+        [DataRow(FacturXVersion.Version23, FacturXFormats.CII, "MissingAmount")]
+        [DataRow(FacturXVersion.Version23, FacturXFormats.CII, "ZeroAmount")]
+        [DataRow(FacturXVersion.Version23, FacturXFormats.CII, "Valid")]
+        [DataRow(FacturXVersion.Version23, FacturXFormats.UBL, "MissingAmount")]
+        [DataRow(FacturXVersion.Version23, FacturXFormats.UBL, "ZeroAmount")]
+        [DataRow(FacturXVersion.Version23, FacturXFormats.UBL, "Valid")]
+        [DataRow(FacturXVersion.Version23, FacturXFormats.UBL, "MissingTaxes")]
+        [DataRow(FacturXVersion.Version23, FacturXFormats.UBL, "MissingPrimaryAmount")]
+        public void TestTaxCurrencyWriterCoupling(FacturXVersion version, FacturXFormats format, string scenario)
+        {
+            InvoiceDescriptor descriptor = _InvoiceProvider.CreateInvoice();
+            descriptor.SetTaxTotalInAccountingCurrency(scenario == "ZeroAmount" ? 0m : 62.50m, CurrencyCodes.CHF);
+            if (scenario == "MissingAmount")
+                descriptor.TaxTotalAmountInAccountingCurrency = null;
+            if (scenario == "MissingTaxes")
+                descriptor.Taxes.Clear();
+            if (scenario == "MissingPrimaryAmount")
+                descriptor.TaxTotalAmount = null;
+
+            using MemoryStream output = new();
+            descriptor.Save(output, version, format == FacturXFormats.UBL ? Profile.XRechnung : Profile.Extended, format);
+            output.Position = 0;
+            XDocument document = XDocument.Load(output);
+            XNamespace ram = "urn:un:unece:uncefact:data:standard:ReusableAggregateBusinessInformationEntity:100";
+            XNamespace cac = "urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2";
+            XNamespace cbc = "urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2";
+            var taxCurrencyNodes = format == FacturXFormats.UBL
+                ? document.Root!.Elements(cbc + "TaxCurrencyCode")
+                : document.Descendants(ram + "TaxCurrencyCode");
+            var taxAmounts = format == FacturXFormats.UBL
+                ? document.Root!.Elements(cac + "TaxTotal").Elements(cbc + "TaxAmount")
+                : document.Descendants(ram + "SpecifiedTradeSettlementHeaderMonetarySummation").Elements(ram + "TaxTotalAmount");
+            var accountingAmounts = taxAmounts.Where(amount => (string?)amount.Attribute("currencyID") == "CHF").ToList();
+            bool expectedAccountingCurrency = scenario == "Valid" || scenario == "ZeroAmount";
+            Assert.AreEqual(expectedAccountingCurrency ? 1 : 0, taxCurrencyNodes.Count(), "BT-6 requires actual BT-111 output");
+            Assert.AreEqual(expectedAccountingCurrency ? 1 : 0, accountingAmounts.Count, "Unexpected BT-111 output");
+            if (expectedAccountingCurrency)
+            {
+                Assert.AreEqual("CHF", taxCurrencyNodes.Single().Value);
+                Assert.AreEqual(scenario == "ZeroAmount" ? 0m : 62.50m, (decimal)accountingAmounts.Single());
+                if (format == FacturXFormats.UBL)
+                    Assert.AreEqual(0, accountingAmounts.Single().Parent!.Elements(cac + "TaxSubtotal").Count(),
+                        "BR-CO-14: BT-111 must not contain the invoice-currency breakdown");
+            }
+        } // !TestTaxCurrencyWriterCoupling()
+
+
+        /// <summary>
+        /// R053 identifiziert BT-110 strukturell, wenn die Währungszuordnung fehlt.
+        /// Ein vorangestelltes BT-111, Positionssteuern oder der Enum-Standard AED
+        /// dürfen dabei nicht als Rechnungssteuerbetrag missverstanden werden.
+        /// </summary>
+        [TestMethod]
+        [DataRow("Valid", CurrencyCodes.CHF, false)]
+        [DataRow("Valid", CurrencyCodes.AED, false)]
+        [DataRow("Valid", CurrencyCodes.CHF, true)]
+        [DataRow("InvoiceCurrencyAED", CurrencyCodes.CHF, false)]
+        [DataRow("MissingId", CurrencyCodes.CHF, false)]
+        [DataRow("MissingId", CurrencyCodes.CHF, true)]
+        [DataRow("MismatchedId", CurrencyCodes.CHF, false)]
+        [DataRow("MissingDocumentCurrency", CurrencyCodes.CHF, false)]
+        [DataRow("MissingDocumentCurrency", CurrencyCodes.AED, false)]
+        [DataRow("UnknownDocumentCurrency", CurrencyCodes.CHF, false)]
+        [DataRow("UnknownDocumentCurrency", CurrencyCodes.AED, false)]
+        [DataRow("UnknownDocumentCurrency", CurrencyCodes.AED, true)]
+        [DataRow("MissingTaxCurrency", CurrencyCodes.CHF, false)]
+        [DataRow("UnknownTaxCurrency", CurrencyCodes.CHF, false)]
+        [DataRow("Ambiguous", CurrencyCodes.CHF, false)]
+        [DataRow("NoSubtotals", CurrencyCodes.CHF, false)]
+        [DataRow("LineTaxOnly", CurrencyCodes.CHF, false)]
+        public void TestTaxCurrencyReaderFallbackUBL(string scenario, CurrencyCodes accountingCurrency, bool creditNote)
+        {
+            InvoiceDescriptor descriptor = _InvoiceProvider.CreateInvoice();
+            if (creditNote)
+                descriptor.Type = InvoiceType.CreditNote;
+            if (scenario == "InvoiceCurrencyAED")
+                descriptor.Currency = CurrencyCodes.AED;
+            descriptor.SetTaxTotalInAccountingCurrency(62.50m, accountingCurrency);
+
+            using MemoryStream output = new();
+            descriptor.Save(output, FacturXVersion.Version23, Profile.XRechnung, FacturXFormats.UBL);
+            output.Position = 0;
+            XDocument document = XDocument.Load(output);
+            XNamespace cac = "urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2";
+            XNamespace cbc = "urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2";
+            XElement root = document.Root!;
+            XElement primaryTotal = root.Elements(cac + "TaxTotal").Single(total => total.Elements(cac + "TaxSubtotal").Any());
+            XElement accountingTotal = root.Elements(cac + "TaxTotal").Single(total => !total.Elements(cac + "TaxSubtotal").Any());
+            XElement primaryAmount = primaryTotal.Element(cbc + "TaxAmount")!;
+            Assert.AreEqual(56.87m, (decimal)primaryAmount, "Invalid positive control");
+            Assert.AreEqual(62.50m, (decimal)accountingTotal.Element(cbc + "TaxAmount")!);
+
+            // Ein Fallback auf den ersten Betrag würde in jeder Variante BT-111 liefern.
+            accountingTotal.Remove();
+            primaryTotal.AddBeforeSelf(accountingTotal);
+            if (scenario == "MissingId" || scenario == "Ambiguous" || scenario == "NoSubtotals")
+                primaryAmount.Attribute("currencyID")!.Remove();
+            if (scenario == "MismatchedId")
+                primaryAmount.SetAttributeValue("currencyID", "USD");
+            if (scenario == "MissingDocumentCurrency")
+                root.Element(cbc + "DocumentCurrencyCode")!.Remove();
+            if (scenario == "UnknownDocumentCurrency")
+                root.Element(cbc + "DocumentCurrencyCode")!.Value = "ZZZ";
+            if (scenario == "MissingTaxCurrency")
+                root.Element(cbc + "TaxCurrencyCode")!.Remove();
+            if (scenario == "UnknownTaxCurrency")
+                root.Element(cbc + "TaxCurrencyCode")!.Value = "ZZZ";
+            if (scenario == "Ambiguous")
+                accountingTotal.Add(new XElement(primaryTotal.Element(cac + "TaxSubtotal")!));
+            if (scenario == "NoSubtotals")
+                primaryTotal.Elements(cac + "TaxSubtotal").Remove();
+            if (scenario == "LineTaxOnly")
+            {
+                primaryTotal.Remove();
+                root.Elements(cac + "InvoiceLine").First().Add(new XElement(primaryTotal));
+            }
+
+            using MemoryStream input = new(Encoding.UTF8.GetBytes(document.ToString()));
+            InvoiceDescriptor loadedInvoice = InvoiceDescriptor.Load(input);
+            Assert.AreEqual(descriptor.InvoiceNo, loadedInvoice.InvoiceNo);
+            Assert.AreEqual(descriptor.TradeLineItems.Count, loadedInvoice.TradeLineItems.Count);
+            if (scenario == "Ambiguous" || scenario == "NoSubtotals" || scenario == "LineTaxOnly")
+                Assert.IsNull(loadedInvoice.TaxTotalAmount, "BT-110 must not be guessed from another group or an invoice line");
+            else
+                Assert.AreEqual(56.87m, loadedInvoice.TaxTotalAmount, "BT-110 must retain the invoice-currency amount");
+            if (scenario == "MissingTaxCurrency" || scenario == "UnknownTaxCurrency")
+            {
+                Assert.IsNull(loadedInvoice.TaxCurrency, "Missing or unknown BT-6 must not become AED");
+                Assert.IsNull(loadedInvoice.TaxTotalAmountInAccountingCurrency);
+            }
+            else
+            {
+                Assert.AreEqual(accountingCurrency, loadedInvoice.TaxCurrency, "AED is a valid accounting currency");
+                Assert.AreEqual(62.50m, loadedInvoice.TaxTotalAmountInAccountingCurrency, "BT-111 must remain assigned to BT-6");
+            }
+            if (scenario == "InvoiceCurrencyAED")
+                Assert.AreEqual(CurrencyCodes.AED, loadedInvoice.Currency, "A parsed AED must remain valid BT-5");
+        } // !TestTaxCurrencyReaderFallbackUBL()
 
 
         [TestMethod]
