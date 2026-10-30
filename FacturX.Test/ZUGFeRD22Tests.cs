@@ -283,6 +283,134 @@ namespace FacturX.Test
         } // !TestDocumentLevelDespatchAndReceivingAdviceReferencedDocumentIgnoreLineId()
 
 
+        [TestMethod]
+        public void TestLineSellerOrderReferencedDocumentLineIdRoundtripExtended()
+        {
+            InvoiceDescriptor descriptor = _InvoiceProvider.CreateInvoice();
+            TradeLineItem lineItem = descriptor.TradeLineItems.First(i => i.SellerAssignedID == "TB100A4");
+            lineItem.SetSellerOrderReferencedDocument("SELLER-ORDER-23", new DateTime(2026, 8, 12), "40");
+
+            using MemoryStream stream = new MemoryStream();
+            descriptor.Save(stream, FacturXVersion.Version23, Profile.Extended);
+            stream.Position = 0;
+
+            InvoiceDescriptor loadedInvoice = InvoiceDescriptor.Load(stream);
+            TradeLineItem loadedLineItem = loadedInvoice.TradeLineItems.First(i => i.SellerAssignedID == "TB100A4");
+            Assert.IsNotNull(loadedLineItem.SellerOrderReferencedDocument);
+            Assert.AreEqual("SELLER-ORDER-23", loadedLineItem.SellerOrderReferencedDocument.ID);
+            Assert.AreEqual("40", loadedLineItem.SellerOrderReferencedDocument.LineID);
+            Assert.AreEqual(new DateTime(2026, 8, 12), loadedLineItem.SellerOrderReferencedDocument.IssueDateTime);
+
+            // the line level reference must not leak into the other lines
+            Assert.IsTrue(loadedInvoice.TradeLineItems.Where(i => i != loadedLineItem).All(i => i.SellerOrderReferencedDocument == null));
+        } // !TestLineSellerOrderReferencedDocumentLineIdRoundtripExtended()
+
+
+        [TestMethod]
+        public void TestLineSellerOrderReferencedDocumentWithoutLineId()
+        {
+            InvoiceDescriptor descriptor = _InvoiceProvider.CreateInvoice();
+            TradeLineItem lineItem = descriptor.TradeLineItems.First(i => i.SellerAssignedID == "TB100A4");
+            lineItem.SetSellerOrderReferencedDocument("SELLER-ORDER-23", new DateTime(2026, 8, 12));
+
+            using MemoryStream stream = new MemoryStream();
+            descriptor.Save(stream, FacturXVersion.Version23, Profile.Extended);
+            stream.Position = 0;
+
+            XmlDocument document = new XmlDocument();
+            document.Load(stream);
+            XmlNamespaceManager namespaceManager = new XmlNamespaceManager(document.NameTable);
+            namespaceManager.AddNamespace("ram", document.DocumentElement.GetNamespaceOfPrefix("ram"));
+            Assert.IsNotNull(document.SelectSingleNode("//ram:SpecifiedLineTradeAgreement/ram:SellerOrderReferencedDocument", namespaceManager));
+            Assert.IsNull(document.SelectSingleNode("//ram:SpecifiedLineTradeAgreement/ram:SellerOrderReferencedDocument/ram:LineID", namespaceManager));
+
+            stream.Position = 0;
+            InvoiceDescriptor loadedInvoice = InvoiceDescriptor.Load(stream);
+            TradeLineItem loadedLineItem = loadedInvoice.TradeLineItems.First(i => i.SellerAssignedID == "TB100A4");
+            Assert.IsNotNull(loadedLineItem.SellerOrderReferencedDocument);
+            Assert.AreEqual("SELLER-ORDER-23", loadedLineItem.SellerOrderReferencedDocument.ID);
+            Assert.IsTrue(string.IsNullOrEmpty(loadedLineItem.SellerOrderReferencedDocument.LineID)); // missing elements are read as empty strings
+            Assert.AreEqual(new DateTime(2026, 8, 12), loadedLineItem.SellerOrderReferencedDocument.IssueDateTime);
+        } // !TestLineSellerOrderReferencedDocumentWithoutLineId()
+
+
+        [TestMethod]
+        public void TestLineSellerOrderReferencedDocumentOrder()
+        {
+            InvoiceDescriptor descriptor = _InvoiceProvider.CreateInvoice();
+            TradeLineItem lineItem = descriptor.TradeLineItems.First(i => i.SellerAssignedID == "TB100A4");
+            lineItem.SetSellerOrderReferencedDocument("SELLER-ORDER-23", new DateTime(2026, 8, 12), "40");
+
+            using MemoryStream stream = new MemoryStream();
+            descriptor.Save(stream, FacturXVersion.Version23, Profile.Extended);
+            stream.Position = 0;
+
+            XmlDocument document = new XmlDocument();
+            document.Load(stream);
+            XmlNamespaceManager namespaceManager = new XmlNamespaceManager(document.NameTable);
+            namespaceManager.AddNamespace("ram", document.DocumentElement.GetNamespaceOfPrefix("ram"));
+            XmlNode? sellerOrderNode = document.SelectSingleNode("//ram:IncludedSupplyChainTradeLineItem[ram:SpecifiedTradeProduct/ram:SellerAssignedID='TB100A4']/ram:SpecifiedLineTradeAgreement/ram:SellerOrderReferencedDocument", namespaceManager);
+            Assert.IsNotNull(sellerOrderNode);
+
+            // content order defined by ram:ReferencedDocumentType
+            List<string> expectedContent = new List<string>() { "IssuerAssignedID", "LineID", "FormattedIssueDateTime" };
+            CollectionAssert.AreEqual(expectedContent, sellerOrderNode.ChildNodes.Cast<XmlNode>().Select(n => n.LocalName).ToList());
+        } // !TestLineSellerOrderReferencedDocumentOrder()
+
+
+        [TestMethod]
+        [DataRow(Profile.Basic)]
+        [DataRow(Profile.Comfort)]
+        [DataRow(Profile.XRechnung1)]
+        [DataRow(Profile.XRechnung)]
+        public void TestLineSellerOrderReferencedDocumentOnlyInExtended(Profile profile)
+        {
+            InvoiceDescriptor descriptor = _InvoiceProvider.CreateInvoice();
+            TradeLineItem lineItem = descriptor.TradeLineItems.First(i => i.SellerAssignedID == "TB100A4");
+            lineItem.SetSellerOrderReferencedDocument("SELLER-ORDER-23", new DateTime(2026, 8, 12), "40");
+
+            using MemoryStream stream = new MemoryStream();
+            descriptor.Save(stream, FacturXVersion.Version23, profile);
+            stream.Position = 0;
+
+            XmlDocument document = new XmlDocument();
+            document.Load(stream);
+            XmlNamespaceManager namespaceManager = new XmlNamespaceManager(document.NameTable);
+            namespaceManager.AddNamespace("ram", document.DocumentElement.GetNamespaceOfPrefix("ram"));
+            Assert.IsNull(document.SelectSingleNode("//ram:SpecifiedLineTradeAgreement/ram:SellerOrderReferencedDocument", namespaceManager));
+        } // !TestLineSellerOrderReferencedDocumentOnlyInExtended()
+
+
+        [TestMethod]
+        public void TestDocumentLevelSellerOrderReferencedDocumentIgnoresLineId()
+        {
+            InvoiceDescriptor descriptor = _InvoiceProvider.CreateInvoice();
+            descriptor.SellerOrderReferencedDocument = new SellerOrderReferencedDocument()
+            {
+                ID = "SELLER-ORDER-23",
+                IssueDateTime = new DateTime(2026, 8, 12),
+                LineID = "40"
+            };
+
+            using MemoryStream stream = new MemoryStream();
+            descriptor.Save(stream, FacturXVersion.Version23, Profile.Extended);
+            stream.Position = 0;
+
+            XmlDocument document = new XmlDocument();
+            document.Load(stream);
+            XmlNamespaceManager namespaceManager = new XmlNamespaceManager(document.NameTable);
+            namespaceManager.AddNamespace("ram", document.DocumentElement.GetNamespaceOfPrefix("ram"));
+            Assert.IsNotNull(document.SelectSingleNode("//ram:ApplicableHeaderTradeAgreement/ram:SellerOrderReferencedDocument", namespaceManager));
+            Assert.IsNull(document.SelectSingleNode("//ram:ApplicableHeaderTradeAgreement/ram:SellerOrderReferencedDocument/ram:LineID", namespaceManager));
+
+            stream.Position = 0;
+            InvoiceDescriptor loadedInvoice = InvoiceDescriptor.Load(stream);
+            Assert.AreEqual("SELLER-ORDER-23", loadedInvoice.SellerOrderReferencedDocument.ID);
+            Assert.IsNull(loadedInvoice.SellerOrderReferencedDocument.LineID);
+            Assert.IsTrue(loadedInvoice.TradeLineItems.All(i => i.SellerOrderReferencedDocument == null));
+        } // !TestDocumentLevelSellerOrderReferencedDocumentIgnoresLineId()
+
+
 
 
         [TestMethod]

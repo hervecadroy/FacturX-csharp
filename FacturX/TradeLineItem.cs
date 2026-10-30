@@ -703,6 +703,25 @@ namespace FacturX
 
 
         /// <summary>
+        /// Sets the seller order (order confirmation) reference information for this trade line item.
+        /// Only available in Extended profile.
+        /// </summary>
+        /// <param name="id">The identifier of the seller order</param>
+        /// <param name="issueDateTime">The issue date of the seller order</param>
+        /// <param name="lineId">The identifier of the seller order item</param>
+        public TradeLineItem SetSellerOrderReferencedDocument(string id, DateTime? issueDateTime = null, string lineId = null)
+        {
+            this.SellerOrderReferencedDocument = new SellerOrderReferencedDocument()
+            {
+                ID = id,
+                IssueDateTime = issueDateTime,
+                LineID = lineId
+            };
+            return this;
+        } // !SetSellerOrderReferencedDocument()
+
+
+        /// <summary>
         /// Adds an additional reference document with basic information
         /// </summary>
         /// <param name="id">Document identifier</param>

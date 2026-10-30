@@ -23,5 +23,11 @@ namespace FacturX
     /// </summary>
     public class SellerOrderReferencedDocument : BaseReferencedDocument
     {
+        /// <summary>
+        /// Reference to the referenced seller order item (EXT-FR-FE-BG-09).
+        ///
+        /// Only used on trade line item level (Extended profile), ignored on document level.
+        /// </summary>
+        public string LineID { get; set; }
     }
 }
