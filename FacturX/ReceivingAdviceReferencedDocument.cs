@@ -24,5 +24,11 @@ namespace FacturX
     /// </summary>
     public class ReceivingAdviceReferencedDocument : BaseReferencedDocument
     {
+        /// <summary>
+        /// Reference to the referenced receiving advice item.
+        ///
+        /// Only used on trade line item level (Extended profile), ignored on document level.
+        /// </summary>
+        public string LineID { get; set; }
     }
 }

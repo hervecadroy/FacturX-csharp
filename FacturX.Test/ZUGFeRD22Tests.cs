@@ -88,6 +88,201 @@ namespace FacturX.Test
         } // !TestReceivingAdviceReferencedDocumentOrder()
 
 
+        [TestMethod]
+        public void TestLineDespatchAdviceReferencedDocumentRoundtripExtended()
+        {
+            InvoiceDescriptor descriptor = _InvoiceProvider.CreateInvoice();
+            TradeLineItem lineItem = descriptor.TradeLineItems.First(i => i.SellerAssignedID == "TB100A4");
+            lineItem.SetDespatchAdviceReferencedDocument("DESPATCH-LINE-23", new DateTime(2026, 8, 14), "10");
+
+            using MemoryStream stream = new MemoryStream();
+            descriptor.Save(stream, FacturXVersion.Version23, Profile.Extended);
+            stream.Position = 0;
+
+            InvoiceDescriptor loadedInvoice = InvoiceDescriptor.Load(stream);
+            TradeLineItem loadedLineItem = loadedInvoice.TradeLineItems.First(i => i.SellerAssignedID == "TB100A4");
+            Assert.IsNotNull(loadedLineItem.DespatchAdviceReferencedDocument);
+            Assert.AreEqual("DESPATCH-LINE-23", loadedLineItem.DespatchAdviceReferencedDocument.ID);
+            Assert.AreEqual("10", loadedLineItem.DespatchAdviceReferencedDocument.LineID);
+            Assert.AreEqual(new DateTime(2026, 8, 14), loadedLineItem.DespatchAdviceReferencedDocument.IssueDateTime);
+            Assert.IsNull(loadedLineItem.ReceivingAdviceReferencedDocument);
+
+            // the line level reference must neither leak into the document level nor into the other lines
+            Assert.IsNull(loadedInvoice.DespatchAdviceReferencedDocument);
+            Assert.IsTrue(loadedInvoice.TradeLineItems.Where(i => i != loadedLineItem).All(i => i.DespatchAdviceReferencedDocument == null));
+        } // !TestLineDespatchAdviceReferencedDocumentRoundtripExtended()
+
+
+        [TestMethod]
+        public void TestLineReceivingAdviceReferencedDocumentRoundtripExtended()
+        {
+            InvoiceDescriptor descriptor = _InvoiceProvider.CreateInvoice();
+            TradeLineItem lineItem = descriptor.TradeLineItems.First(i => i.SellerAssignedID == "TB100A4");
+            lineItem.SetReceivingAdviceReferencedDocument("RECEIPT-LINE-23", new DateTime(2026, 8, 16), "20");
+
+            using MemoryStream stream = new MemoryStream();
+            descriptor.Save(stream, FacturXVersion.Version23, Profile.Extended);
+            stream.Position = 0;
+
+            InvoiceDescriptor loadedInvoice = InvoiceDescriptor.Load(stream);
+            TradeLineItem loadedLineItem = loadedInvoice.TradeLineItems.First(i => i.SellerAssignedID == "TB100A4");
+            Assert.IsNotNull(loadedLineItem.ReceivingAdviceReferencedDocument);
+            Assert.AreEqual("RECEIPT-LINE-23", loadedLineItem.ReceivingAdviceReferencedDocument.ID);
+            Assert.AreEqual("20", loadedLineItem.ReceivingAdviceReferencedDocument.LineID);
+            Assert.AreEqual(new DateTime(2026, 8, 16), loadedLineItem.ReceivingAdviceReferencedDocument.IssueDateTime);
+            Assert.IsNull(loadedLineItem.DespatchAdviceReferencedDocument);
+
+            // the line level reference must neither leak into the document level nor into the other lines
+            Assert.IsNull(loadedInvoice.ReceivingAdviceReferencedDocument);
+            Assert.IsTrue(loadedInvoice.TradeLineItems.Where(i => i != loadedLineItem).All(i => i.ReceivingAdviceReferencedDocument == null));
+        } // !TestLineReceivingAdviceReferencedDocumentRoundtripExtended()
+
+
+        [TestMethod]
+        public void TestLineDespatchAndReceivingAdviceReferencedDocumentWithoutDateAndLineId()
+        {
+            InvoiceDescriptor descriptor = _InvoiceProvider.CreateInvoice();
+            TradeLineItem lineItem = descriptor.TradeLineItems.First(i => i.SellerAssignedID == "TB100A4");
+            lineItem.SetDespatchAdviceReferencedDocument("DESPATCH-LINE-23");
+            lineItem.SetReceivingAdviceReferencedDocument("RECEIPT-LINE-23");
+
+            using MemoryStream stream = new MemoryStream();
+            descriptor.Save(stream, FacturXVersion.Version23, Profile.Extended);
+            stream.Position = 0;
+
+            InvoiceDescriptor loadedInvoice = InvoiceDescriptor.Load(stream);
+            TradeLineItem loadedLineItem = loadedInvoice.TradeLineItems.First(i => i.SellerAssignedID == "TB100A4");
+            Assert.IsNotNull(loadedLineItem.DespatchAdviceReferencedDocument);
+            Assert.AreEqual("DESPATCH-LINE-23", loadedLineItem.DespatchAdviceReferencedDocument.ID);
+            Assert.IsTrue(string.IsNullOrEmpty(loadedLineItem.DespatchAdviceReferencedDocument.LineID)); // missing elements are read as empty strings
+            Assert.IsNull(loadedLineItem.DespatchAdviceReferencedDocument.IssueDateTime);
+            Assert.IsNotNull(loadedLineItem.ReceivingAdviceReferencedDocument);
+            Assert.AreEqual("RECEIPT-LINE-23", loadedLineItem.ReceivingAdviceReferencedDocument.ID);
+            Assert.IsTrue(string.IsNullOrEmpty(loadedLineItem.ReceivingAdviceReferencedDocument.LineID));
+            Assert.IsNull(loadedLineItem.ReceivingAdviceReferencedDocument.IssueDateTime);
+        } // !TestLineDespatchAndReceivingAdviceReferencedDocumentWithoutDateAndLineId()
+
+
+        [TestMethod]
+        public void TestLineDespatchAndReceivingAdviceReferencedDocumentOrder()
+        {
+            InvoiceDescriptor descriptor = _InvoiceProvider.CreateInvoice();
+            TradeLineItem lineItem = descriptor.TradeLineItems.First(i => i.SellerAssignedID == "TB100A4");
+            lineItem.ActualDeliveryDate = new DateTime(2026, 8, 13);
+            lineItem.SetDeliveryNoteReferencedDocument("DELIVERY-LINE-23", new DateTime(2026, 8, 13), "30");
+            lineItem.SetReceivingAdviceReferencedDocument("RECEIPT-LINE-23", new DateTime(2026, 8, 16), "20");
+            lineItem.SetDespatchAdviceReferencedDocument("DESPATCH-LINE-23", new DateTime(2026, 8, 14), "10");
+
+            using MemoryStream stream = new MemoryStream();
+            descriptor.Save(stream, FacturXVersion.Version23, Profile.Extended);
+            stream.Position = 0;
+
+            XmlDocument document = new XmlDocument();
+            document.Load(stream);
+            XmlNamespaceManager namespaceManager = new XmlNamespaceManager(document.NameTable);
+            namespaceManager.AddNamespace("ram", document.DocumentElement.GetNamespaceOfPrefix("ram"));
+            XmlNode? lineDeliveryNode = document.SelectSingleNode("//ram:IncludedSupplyChainTradeLineItem[ram:SpecifiedTradeProduct/ram:SellerAssignedID='TB100A4']/ram:SpecifiedLineTradeDelivery", namespaceManager);
+            Assert.IsNotNull(lineDeliveryNode);
+
+            List<string> deliveryChildren = lineDeliveryNode.ChildNodes.Cast<XmlNode>().Select(n => n.LocalName).ToList();
+            int actualDeliveryIndex = deliveryChildren.IndexOf("ActualDeliverySupplyChainEvent");
+            int despatchAdviceIndex = deliveryChildren.IndexOf("DespatchAdviceReferencedDocument");
+            int receivingAdviceIndex = deliveryChildren.IndexOf("ReceivingAdviceReferencedDocument");
+            int deliveryNoteIndex = deliveryChildren.IndexOf("DeliveryNoteReferencedDocument");
+            Assert.IsTrue(actualDeliveryIndex >= 0);
+            Assert.IsTrue(actualDeliveryIndex < despatchAdviceIndex);
+            Assert.IsTrue(despatchAdviceIndex < receivingAdviceIndex);
+            Assert.IsTrue(receivingAdviceIndex < deliveryNoteIndex);
+
+            // content order defined by ram:ReferencedDocumentType
+            List<string> expectedContent = new List<string>() { "IssuerAssignedID", "LineID", "FormattedIssueDateTime" };
+            foreach (string elementName in new[] { "DespatchAdviceReferencedDocument", "ReceivingAdviceReferencedDocument" })
+            {
+                XmlNode? referencedDocumentNode = lineDeliveryNode.SelectSingleNode($"ram:{elementName}", namespaceManager);
+                Assert.IsNotNull(referencedDocumentNode);
+                CollectionAssert.AreEqual(expectedContent, referencedDocumentNode.ChildNodes.Cast<XmlNode>().Select(n => n.LocalName).ToList());
+            }
+        } // !TestLineDespatchAndReceivingAdviceReferencedDocumentOrder()
+
+
+        [TestMethod]
+        [DataRow(Profile.Basic)]
+        [DataRow(Profile.Comfort)]
+        [DataRow(Profile.XRechnung1)]
+        [DataRow(Profile.XRechnung)]
+        public void TestLineDespatchAndReceivingAdviceReferencedDocumentOnlyInExtended(Profile profile)
+        {
+            InvoiceDescriptor descriptor = _InvoiceProvider.CreateInvoice();
+            TradeLineItem lineItem = descriptor.TradeLineItems.First(i => i.SellerAssignedID == "TB100A4");
+            lineItem.SetDespatchAdviceReferencedDocument("DESPATCH-LINE-23", new DateTime(2026, 8, 14), "10");
+            lineItem.SetReceivingAdviceReferencedDocument("RECEIPT-LINE-23", new DateTime(2026, 8, 16), "20");
+
+            using MemoryStream stream = new MemoryStream();
+            descriptor.Save(stream, FacturXVersion.Version23, profile);
+            stream.Position = 0;
+
+            string xml = new StreamReader(stream).ReadToEnd();
+            Assert.IsFalse(xml.Contains("DespatchAdviceReferencedDocument"));
+            Assert.IsFalse(xml.Contains("ReceivingAdviceReferencedDocument"));
+
+            stream.Position = 0;
+            InvoiceDescriptor loadedInvoice = InvoiceDescriptor.Load(stream);
+            Assert.IsTrue(loadedInvoice.TradeLineItems.Count > 0);
+            Assert.IsTrue(loadedInvoice.TradeLineItems.All(i => i.DespatchAdviceReferencedDocument == null && i.ReceivingAdviceReferencedDocument == null));
+        } // !TestLineDespatchAndReceivingAdviceReferencedDocumentOnlyInExtended()
+
+
+        [TestMethod]
+        public void TestLineDespatchAndReceivingAdviceReferencedDocumentNotWrittenWhenNull()
+        {
+            InvoiceDescriptor descriptor = _InvoiceProvider.CreateInvoice();
+
+            using MemoryStream stream = new MemoryStream();
+            descriptor.Save(stream, FacturXVersion.Version23, Profile.Extended);
+            stream.Position = 0;
+
+            string xml = new StreamReader(stream).ReadToEnd();
+            Assert.IsFalse(xml.Contains("DespatchAdviceReferencedDocument"));
+            Assert.IsFalse(xml.Contains("ReceivingAdviceReferencedDocument"));
+
+            stream.Position = 0;
+            InvoiceDescriptor loadedInvoice = InvoiceDescriptor.Load(stream);
+            Assert.IsTrue(loadedInvoice.TradeLineItems.All(i => i.DespatchAdviceReferencedDocument == null && i.ReceivingAdviceReferencedDocument == null));
+        } // !TestLineDespatchAndReceivingAdviceReferencedDocumentNotWrittenWhenNull()
+
+
+        [TestMethod]
+        public void TestDocumentLevelDespatchAndReceivingAdviceReferencedDocumentIgnoreLineId()
+        {
+            InvoiceDescriptor descriptor = _InvoiceProvider.CreateInvoice();
+            descriptor.SetDespatchAdviceReferencedDocument("DESPATCH-23", new DateTime(2026, 8, 14));
+            descriptor.SetReceivingAdviceReferencedDocument("RECEIPT-23", new DateTime(2026, 8, 16));
+            descriptor.DespatchAdviceReferencedDocument.LineID = "10";
+            descriptor.ReceivingAdviceReferencedDocument.LineID = "20";
+
+            using MemoryStream stream = new MemoryStream();
+            descriptor.Save(stream, FacturXVersion.Version23, Profile.Extended);
+            stream.Position = 0;
+
+            XmlDocument document = new XmlDocument();
+            document.Load(stream);
+            XmlNamespaceManager namespaceManager = new XmlNamespaceManager(document.NameTable);
+            namespaceManager.AddNamespace("ram", document.DocumentElement.GetNamespaceOfPrefix("ram"));
+            Assert.IsNotNull(document.SelectSingleNode("//ram:ApplicableHeaderTradeDelivery/ram:DespatchAdviceReferencedDocument", namespaceManager));
+            Assert.IsNotNull(document.SelectSingleNode("//ram:ApplicableHeaderTradeDelivery/ram:ReceivingAdviceReferencedDocument", namespaceManager));
+            Assert.IsNull(document.SelectSingleNode("//ram:ApplicableHeaderTradeDelivery/ram:DespatchAdviceReferencedDocument/ram:LineID", namespaceManager));
+            Assert.IsNull(document.SelectSingleNode("//ram:ApplicableHeaderTradeDelivery/ram:ReceivingAdviceReferencedDocument/ram:LineID", namespaceManager));
+
+            stream.Position = 0;
+            InvoiceDescriptor loadedInvoice = InvoiceDescriptor.Load(stream);
+            Assert.AreEqual("DESPATCH-23", loadedInvoice.DespatchAdviceReferencedDocument.ID);
+            Assert.IsNull(loadedInvoice.DespatchAdviceReferencedDocument.LineID);
+            Assert.AreEqual("RECEIPT-23", loadedInvoice.ReceivingAdviceReferencedDocument.ID);
+            Assert.IsNull(loadedInvoice.ReceivingAdviceReferencedDocument.LineID);
+            Assert.IsTrue(loadedInvoice.TradeLineItems.All(i => i.DespatchAdviceReferencedDocument == null && i.ReceivingAdviceReferencedDocument == null));
+        } // !TestDocumentLevelDespatchAndReceivingAdviceReferencedDocumentIgnoreLineId()
+
+
 
 
         [TestMethod]

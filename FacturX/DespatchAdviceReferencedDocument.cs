@@ -28,5 +28,11 @@ namespace FacturX
     /// </summary>
     public class DespatchAdviceReferencedDocument : BaseReferencedDocument
     {
+        /// <summary>
+        /// Reference to the referenced despatch advice item.
+        ///
+        /// Only used on trade line item level (Extended profile), ignored on document level.
+        /// </summary>
+        public string LineID { get; set; }
     }
 }

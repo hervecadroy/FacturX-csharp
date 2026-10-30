@@ -464,6 +464,17 @@ namespace FacturX
                     _Writer.WriteEndElement(); // !ActualDeliverySupplyChainEvent
                 }
 
+                // order defined by the schema: DespatchAdvice, ReceivingAdvice, DeliveryNote
+                if (tradeLineItem.DespatchAdviceReferencedDocument != null)
+                {
+                    _writeLineReferencedDocument(_Writer, "DespatchAdviceReferencedDocument", tradeLineItem.DespatchAdviceReferencedDocument, tradeLineItem.DespatchAdviceReferencedDocument.LineID);
+                }
+
+                if (tradeLineItem.ReceivingAdviceReferencedDocument != null)
+                {
+                    _writeLineReferencedDocument(_Writer, "ReceivingAdviceReferencedDocument", tradeLineItem.ReceivingAdviceReferencedDocument, tradeLineItem.ReceivingAdviceReferencedDocument.LineID);
+                }
+
                 if (tradeLineItem.DeliveryNoteReferencedDocument != null)
                 {
                     _Writer.WriteStartElement("ram", "DeliveryNoteReferencedDocument", Profile.Extended); // this violates CII-SR-175 for XRechnung 3
@@ -1818,6 +1829,33 @@ namespace FacturX
                 writer.WriteEndElement();
             });
         } // !_writeNotes()
+
+
+        /// <summary>
+        /// Writes a referenced document on trade line item level (Extended profile only),
+        /// e.g. ram:DespatchAdviceReferencedDocument or ram:ReceivingAdviceReferencedDocument
+        /// within ram:SpecifiedLineTradeDelivery
+        /// </summary>
+        private void _writeLineReferencedDocument(ProfileAwareXmlTextWriter writer, string elementName, BaseReferencedDocument document, string lineId)
+        {
+            writer.WriteStartElement("ram", elementName, Profile.Extended);
+            writer.WriteOptionalElementString("ram", "IssuerAssignedID", document.ID);
+
+            // reference to the item of the referenced document
+            writer.WriteOptionalElementString("ram", "LineID", lineId);
+
+            if (document.IssueDateTime.HasValue)
+            {
+                writer.WriteStartElement("ram", "FormattedIssueDateTime");
+                writer.WriteStartElement("qdt", "DateTimeString");
+                writer.WriteAttributeString("format", "102");
+                writer.WriteValue(_formatDate(document.IssueDateTime.Value));
+                writer.WriteEndElement(); // !qdt:DateTimeString
+                writer.WriteEndElement(); // !ram:FormattedIssueDateTime
+            }
+
+            writer.WriteEndElement(); // !ram:<elementName>
+        } // !_writeLineReferencedDocument()
 
 
         private void _writeOptionalLegalOrganization(ProfileAwareXmlTextWriter writer, string prefix, string legalOrganizationTag, LegalOrganization legalOrganization, PartyTypes partyType = PartyTypes.Unknown)

@@ -845,6 +845,28 @@ namespace FacturX
                 item.UnitCode = EnumExtensions.StringToNullableEnum<QuantityCodes>(XmlUtils.NodeAsString(tradeLineItem, ".//ram:BilledQuantity/@unitCode", nsmgr));
             }
 
+            XmlNode despatchAdviceReferencedDocumentNode = tradeLineItem.SelectSingleNode(".//ram:SpecifiedLineTradeDelivery/ram:DespatchAdviceReferencedDocument", nsmgr);
+            if (despatchAdviceReferencedDocumentNode != null)
+            {
+                item.DespatchAdviceReferencedDocument = new DespatchAdviceReferencedDocument()
+                {
+                    ID = XmlUtils.NodeAsString(despatchAdviceReferencedDocumentNode, "ram:IssuerAssignedID", nsmgr),
+                    IssueDateTime = DataTypeReader.ReadFormattedIssueDateTime(despatchAdviceReferencedDocumentNode, "ram:FormattedIssueDateTime", nsmgr),
+                    LineID = XmlUtils.NodeAsString(despatchAdviceReferencedDocumentNode, "ram:LineID", nsmgr)
+                };
+            }
+
+            XmlNode receivingAdviceReferencedDocumentNode = tradeLineItem.SelectSingleNode(".//ram:SpecifiedLineTradeDelivery/ram:ReceivingAdviceReferencedDocument", nsmgr);
+            if (receivingAdviceReferencedDocumentNode != null)
+            {
+                item.ReceivingAdviceReferencedDocument = new ReceivingAdviceReferencedDocument()
+                {
+                    ID = XmlUtils.NodeAsString(receivingAdviceReferencedDocumentNode, "ram:IssuerAssignedID", nsmgr),
+                    IssueDateTime = DataTypeReader.ReadFormattedIssueDateTime(receivingAdviceReferencedDocumentNode, "ram:FormattedIssueDateTime", nsmgr),
+                    LineID = XmlUtils.NodeAsString(receivingAdviceReferencedDocumentNode, "ram:LineID", nsmgr)
+                };
+            }
+
             if (tradeLineItem.SelectSingleNode(".//ram:SpecifiedLineTradeDelivery/ram:DeliveryNoteReferencedDocument/ram:IssuerAssignedID", nsmgr) != null)
             {
                 item.DeliveryNoteReferencedDocument = new DeliveryNoteReferencedDocument()

@@ -272,6 +272,20 @@ namespace FacturX
         public DeliveryNoteReferencedDocument DeliveryNoteReferencedDocument { get; set; }
 
         /// <summary>
+        /// Detailed information about the corresponding despatch advice (item level)
+        ///
+        /// Only available in Extended profile.
+        /// </summary>
+        public DespatchAdviceReferencedDocument DespatchAdviceReferencedDocument { get; set; }
+
+        /// <summary>
+        /// Detailed information about the corresponding receiving advice (item level)
+        ///
+        /// Only available in Extended profile.
+        /// </summary>
+        public ReceivingAdviceReferencedDocument ReceivingAdviceReferencedDocument { get; set; }
+
+        /// <summary>
         /// Details of the associated contract
         ///
         /// BG-X-2
@@ -648,6 +662,44 @@ namespace FacturX
             };
             return this;
         } // !SetDeliveryNoteReferencedDocument()
+
+
+        /// <summary>
+        /// Sets the despatch advice reference information for this trade line item.
+        /// Only available in Extended profile.
+        /// </summary>
+        /// <param name="id">The identifier of the despatch advice</param>
+        /// <param name="issueDateTime">The issue date of the despatch advice</param>
+        /// <param name="lineId">The identifier of the despatch advice item</param>
+        public TradeLineItem SetDespatchAdviceReferencedDocument(string id, DateTime? issueDateTime = null, string lineId = null)
+        {
+            this.DespatchAdviceReferencedDocument = new DespatchAdviceReferencedDocument()
+            {
+                ID = id,
+                IssueDateTime = issueDateTime,
+                LineID = lineId
+            };
+            return this;
+        } // !SetDespatchAdviceReferencedDocument()
+
+
+        /// <summary>
+        /// Sets the receiving advice reference information for this trade line item.
+        /// Only available in Extended profile.
+        /// </summary>
+        /// <param name="id">The identifier of the receiving advice</param>
+        /// <param name="issueDateTime">The issue date of the receiving advice</param>
+        /// <param name="lineId">The identifier of the receiving advice item</param>
+        public TradeLineItem SetReceivingAdviceReferencedDocument(string id, DateTime? issueDateTime = null, string lineId = null)
+        {
+            this.ReceivingAdviceReferencedDocument = new ReceivingAdviceReferencedDocument()
+            {
+                ID = id,
+                IssueDateTime = issueDateTime,
+                LineID = lineId
+            };
+            return this;
+        } // !SetReceivingAdviceReferencedDocument()
 
 
         /// <summary>
