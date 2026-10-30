@@ -298,6 +298,9 @@ namespace FacturX
                         _Writer.WriteStartElement("ram", "SellerOrderReferencedDocument", Profile.Extended);
                         _Writer.WriteOptionalElementString("ram", "IssuerAssignedID", tradeLineItem.SellerOrderReferencedDocument.ID);
 
+                        // reference to the item of the seller order (order defined by the schema: IssuerAssignedID, LineID, FormattedIssueDateTime)
+                        _Writer.WriteOptionalElementString("ram", "LineID", tradeLineItem.SellerOrderReferencedDocument.LineID);
+
                         if (tradeLineItem.SellerOrderReferencedDocument.IssueDateTime.HasValue)
                         {
                             _Writer.WriteStartElement("ram", "FormattedIssueDateTime", Profile.Extended);
